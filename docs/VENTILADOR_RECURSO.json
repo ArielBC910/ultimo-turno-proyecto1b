@@ -1,0 +1,7 @@
+{
+  "file": "public/assets/images/fan-rotor.png",
+  "tool": "image_gen.imagegen (integrado)",
+  "prompt": "Use case: stylized-concept. Asset type: transparent animated-game prop layer, ONLY the three-bladed ROTOR from a vintage 1990s desk fan. Existing office photo is a MATERIAL AND STYLE REFERENCE, do not recreate the room. Create a straight-on centered three-bladed fan rotor with exactly three broad curved rounded metal blades spaced evenly at 120 degrees, joined to a small circular central hub, aged dark bronze/gunmetal, realistic subtle scratches and grime, slight warm amber metal highlights. Physically plausible thin metal blades, very dark understated photographic lighting. Rotor centered symmetrically in a square canvas with clear transparent spaces between blades, 12% transparent padding all sides. NO wire grille, NO cage, NO stand, NO body, NO cables, NO shadow outside rotor, NO background, NO text. Output real transparent alpha background. This image will rotate at runtime behind a stationary grille.",
+  "reference": "public/assets/images/office.png",
+  "usage": "Aspas animadas en Phaser; rejilla y carcasa fijas."
+}

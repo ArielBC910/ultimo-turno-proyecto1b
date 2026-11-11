@@ -1,0 +1,7 @@
+{
+  "file": "public/assets/images/cam03-storage.png",
+  "tool": "image_gen.imagegen (integrado)",
+  "prompt": "Use case: stylized-concept. Reference image role: style and restaurant material reference only, NOT an edit preserving the kitchen layout. Create a new full landscape CCTV security camera view of the DRY STORAGE ROOM of the same closed 1990s fast-food burger restaurant. Viewed from a high ceiling corner, wide lens, worn cream tiles with a dark red horizontal stripe, teal-gray low fluorescent night light, muted desaturated colors, ominous empty room with realistic 3D-rendered materials. Metal storage shelves on both sides holding cardboard food supply boxes, paper burger wrapping, takeaway cup stacks, cooking oil bottles and unopened sacks; a narrow walking aisle leads to a closed red utility door, low rectangular ceiling. This is a bodega, NOT a kitchen: no stoves, no fryers, no preparation tables, no extractor hood. Readable geometry and details despite atmospheric darkness. Match the attached reference image's style, color and 16:9 proportions. No people, no monster, no character, no text, no logos, no HUD, no watermarks.",
+  "replacesView": "CAM 03: cocina → bodega",
+  "retainedUnusedAsset": "public/assets/images/cam03.png"
+}

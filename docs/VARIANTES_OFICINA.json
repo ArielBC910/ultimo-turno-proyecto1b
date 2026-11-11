@@ -1,0 +1,22 @@
+{
+  "assets": [
+    {
+      "file": "public/assets/images/office-closed.png",
+      "tool": "image_gen.imagegen",
+      "prompt": "Edit target: attached security office background. Use case: precise-object-edit. Change ONLY the open central doorway: install a fully CLOSED heavy industrial steel security shutter within the exact existing central doorframe, covering the entire hallway opening from the top lintel down to the threshold behind the desk. Brushed aged gray metal, horizontal slats, realistic slight grime and vertical tracks matching the restaurant. Door is opaque, no window, no hallway visible. Preserve EXACT camera position, framing, resolution, perspective, warm lighting, every foreground desk object, monitor, cup, papers, fan, lamps, wall tiles, red stripe, door frame and chair. No other changes, no characters, no text, no UI. Single full scene image.",
+      "reference": "office.png"
+    },
+    {
+      "file": "public/assets/images/office-light.png",
+      "tool": "image_gen.imagegen",
+      "prompt": "Edit target: attached security office background. Use case: lighting-weather. Keep EXACT camera position, framing, every object, doorway geometry, hallway, fan, desk, chair, tile walls, lamp, cup, monitor, papers and all textures unchanged. Change lighting ONLY: add a strong handheld flashlight beam coming from the guard's viewpoint toward the center of the open central doorway and the far hallway. Realistic fairly tight CIRCULAR cone-shaped warm-white flashlight spot centered x50% y43%, bright central hotspot and distinct soft feathered falloff, revealing hallway center and checkered floor locally. Outside that single middle flashlight cone, the office and image edges stay dim, same as original or slightly darker. Do NOT brighten the whole room. No visible flashlight object, no additional ceiling lights, no new objects or characters, no text, no UI. A full landscape scene variant, not an overlay.",
+      "reference": "office.png"
+    },
+    {
+      "file": "public/assets/images/office-closed-light.png",
+      "tool": "image_gen.imagegen",
+      "prompt": "Edit target: closed restaurant security office image. Use case: lighting-weather. Preserve EXACT every object, camera framing, geometry, closed horizontal-slat steel shutter, fan, desk, monitor, lamp, tiles and textures. Only add a handheld flashlight's focused round warm-white bright spot in the middle of the closed shutter at x50% y43%, with circular localized hotspot and realistic feathered beam, softly revealing metal slats. Outside the small central flashlight beam, keep the rest of the image and room dim at original illumination or slightly darker. Do NOT brighten the whole image or open the shutter. No new objects, no monster, no UI, no text. Full scene image, identical proportions.",
+      "reference": "office-closed.png"
+    }
+  ]
+}

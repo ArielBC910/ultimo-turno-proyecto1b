@@ -1,0 +1,15 @@
+{
+  "name": "proyecto-primer-bimestre",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test"
+  },
+  "engines": { "node": "^20.19.0 || >=22.12.0" },
+  "dependencies": { "phaser": "3.90.0" },
+  "devDependencies": { "vite": "^7.0.0" }
+}

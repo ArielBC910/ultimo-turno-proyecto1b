@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0e0c" />
+  <title>Último turno · Restaurante</title>
+</head>
+<body>
+  <main id="surveillance" class="menu-mode" aria-label="Interfaz de vigilancia del restaurante">
+    <div id="game" aria-label="Escenario del restaurante"></div>
+    <div class="office-shade" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="camera-noise" aria-hidden="true"></div>
+    <div class="screen-border" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="identity"><span class="eyebrow"><span class="tiny-square"></span> RESTAURANTE / SEGURIDAD</span><h1>ÚLTIMO TURNO<span>VIGILANCIA NOCTURNA</span></h1></div>
+      <div class="shift"><div class="time"><span id="clock-hours">12</span>:<span id="clock-minutes">00</span> <small>AM</small></div><span class="eyebrow">NOCHE 01 · SOBREVIVE HASTA LAS 6 AM</span></div>
+    </header>
+
+    <section class="office-label"><span class="status-dot"></span><span>OFICINA DE SEGURIDAD</span><span class="label-divider"></span><span class="muted">ACCESO FRONTAL</span></section>
+    <div id="loading" role="status">CARGANDO ESCENARIOS <span>...</span></div>
+    <section id="start-menu" aria-label="Menú principal" hidden>
+      <div class="menu-copy">
+        <span class="eyebrow"><span class="tiny-square"></span> RESTAURANTE / TURNO NOCTURNO</span>
+        <p class="menu-chapter">01 / DESPUÉS DEL CIERRE</p>
+        <h2>ÚLTIMO<br><span>TURNO</span></h2>
+        <p class="menu-intro">El restaurante cerró a medianoche.<br>Tu turno termina cuando salga el sol.</p>
+        <button id="start-button">SOBREVIVIR LA NOCHE <span>↗</span></button>
+        <p class="menu-duration">6 MINUTOS REALES <span>12:00 AM — 6:00 AM</span></p>
+        <details class="menu-help"><summary>ANTES DE COMENZAR</summary><p>Vigila las cuatro cámaras y usa la linterna para descubrir qué se esconde en el acceso. El wendigo toma decisiones al azar e intenta acercarse.</p><p>Si está frente a ti, tienes hasta 15 segundos de exposición con la puerta abierta. Ciérrala y mantenla cerrada: después de 5 a 15 segundos oirás un golpe y un grito. Entonces se habrá retirado.</p><p><b>D</b> Puerta · <b>F</b> Linterna · <b>C</b> Monitor · <b>1–4</b> Cámaras. También puedes usar los botones.</p></details>
+        <div class="menu-record"><span>MEJOR TURNO <b id="menu-best">0:00</b></span><span>NOCHES SUPERADAS <b id="menu-wins">0</b></span></div>
+        <span class="menu-version">RESTAURANTE CERRADO / PERSONAL AUTORIZADO</span>
+      </div>
+      <aside class="menu-contract"><span>CONTRATO DE VIGILANCIA / 01</span><h3>NO ESTÁS<br>SOLO.</h3><p>Cuatro cámaras.<br>Una puerta.<br>Que llegue el amanecer.</p><div><i></i> ACCESO AL LOCAL RESTRINGIDO</div></aside>
+    </section>
+    <button id="return-menu" aria-label="Volver al menú principal">MENÚ</button>
+    <button id="audio-button" class="audio-button" aria-pressed="true">AUDIO ACTIVADO</button>
+
+    <section id="result-screen" aria-label="Resultado de la partida" hidden>
+      <div class="result-card">
+        <span id="result-eyebrow" class="eyebrow">SEÑAL PERDIDA</span>
+        <h2 id="result-title">NO LLEGASTE AL AMANECER</h2>
+        <p id="result-message"></p>
+        <div class="result-track"><div id="result-progress"></div></div>
+        <span id="result-time"></span>
+        <div class="result-actions"><button id="retry-button">VOLVER A JUGAR ↗</button><button id="result-menu-button">MENÚ PRINCIPAL</button></div>
+      </div>
+    </section>
+
+    <section id="camera-view" aria-label="Monitor de cámaras" hidden>
+      <div class="feed-caption"><span class="feed-id" id="feed-id">CAM 01</span><h2 id="feed-name">COMEDOR</h2><p>INTERIOR / CIRCUITO CERRADO</p></div>
+      <div class="recording"><span></span> REC <i>● ● ●</i></div>
+      <div class="crosshair" aria-hidden="true"></div>
+      <aside class="camera-panel">
+        <div class="panel-heading"><span>PLANO DEL LOCAL</span><span>4 CÁMARAS</span></div>
+        <div class="floorplan" aria-label="Mapa de cámaras">
+          <svg viewBox="0 0 300 170" aria-hidden="true"><path d="M25 20h135v60h-35v40H25z M175 20h100v60H175z M175 95h100v55H175z M80 135h70v25H80z M125 100h35v35h25 M160 50h15 M225 80v15" /><path class="map-dotted" d="M80 75h65v40h50 M125 115v30" /></svg>
+          <button class="map-camera map-1" data-camera="cam01" aria-label="Ver cámara 1: comedor">01</button>
+          <button class="map-camera map-2" data-camera="cam02" aria-label="Ver cámara 2: mostrador">02</button>
+          <button class="map-camera map-3" data-camera="cam03" aria-label="Ver cámara 3: bodega">03</button>
+          <button class="map-camera map-4" data-camera="cam04" aria-label="Ver cámara 4: pasillo">04</button>
+          <span class="you-are-here">TÚ / OFICINA · COCINA DETRÁS</span>
+        </div>
+        <div class="camera-list">
+          <button data-camera="cam01"><span class="camera-number">01</span><span>Comedor</span><i>●</i></button>
+          <button data-camera="cam02"><span class="camera-number">02</span><span>Mostrador</span><i>●</i></button>
+          <button data-camera="cam03"><span class="camera-number">03</span><span>Bodega</span><i>●</i></button>
+          <button data-camera="cam04"><span class="camera-number">04</span><span>Pasillo de acceso</span><i>●</i></button>
+        </div>
+        <p class="panel-note"><span class="status-dot"></span> SEÑAL LOCAL · INTERFERENCIA ANALÓGICA</p>
+      </aside>
+      <span class="feed-corner corner-tl"></span><span class="feed-corner corner-br"></span>
+    </section>
+
+    <footer class="console">
+      <div class="console-meta"><span class="status-dot"></span><span id="view-status" role="status">SISTEMA EN LÍNEA</span><span class="meta-sub">TERMINAL DE VIGILANCIA / 01</span></div>
+      <div class="controls">
+        <button id="door-button" class="control-button" aria-pressed="false" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V3h14v18 M3 21h18 M9 3v18 M15 12h1"/></svg>
+          <span><strong id="door-label">CERRAR PUERTA</strong><small id="door-state">PUERTA FRONTAL ABIERTA</small></span><kbd>D</kbd>
+        </button>
+        <button id="light-button" class="control-button" aria-pressed="false" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h7l3-3v12l-3-3H5z M18 8l3-2 M18 12h4 M18 16l3 2"/></svg>
+          <span><strong>ILUMINAR</strong><small id="light-state">LUZ FRONTAL APAGADA</small></span><kbd>F</kbd>
+        </button>
+        <button id="cameras-button" class="control-button" aria-expanded="false" aria-controls="camera-view" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21h8 M12 17v4 M7 8h10"/></svg>
+          <span><strong id="monitor-label">CÁMARAS</strong><small id="monitor-state">ABRIR MONITOR</small></span><kbd>C</kbd>
+        </button>
+      </div>
+      <div class="interaction-hint">CLIC O TECLADO<span>D · PUERTA / F · LUZ / C · MONITOR / 1–4 · CÁMARAS</span></div>
+    </footer>
+    <p class="prototype-note">VIGILANCIA NOCTURNA · NO PIERDAS DE VISTA EL ACCESO</p>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
