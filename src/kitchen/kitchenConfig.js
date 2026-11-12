@@ -11,8 +11,7 @@ export const BACK_OPENS_MONITOR = false;
 export const MAX_ITEMS_PER_ORDER = 3;
 
 // Tiempo (ms) que un cliente espera su pedido desde que llega a la ventana. Al llegar a 0 se va.
-// export const CUSTOMER_PATIENCE_MS = 20000;
-export const CUSTOMER_PATIENCE_MS = 5000;
+export const CUSTOMER_PATIENCE_MS = 20000;
 
 // Cuántos clientes pueden estar a la vez en la ventana.
 export const MAX_CUSTOMERS_AT_WINDOW = 2;
