@@ -5,6 +5,11 @@ import { getSurveillanceTexture } from '../config.js';
 import { NightSession } from '../managers/NightSession.js';
 import { CameraInterference } from '../ui/CameraInterference.js';
 import { FanEffect } from '../objects/FanEffect.js';
+import { KitchenView } from '../objects/KitchenView.js';
+import { ScareManager } from '../managers/ScareManager.js';
+import { ScareMeterUI } from '../ui/ScareMeterUI.js';
+import { KITCHEN_EVENTS } from '../kitchen/kitchenConfig.js';
+import { triggerJumpscare } from '../kitchen/jumpscare.js';
 
 export class OfficeScene extends Phaser.Scene {
   constructor() { super('Office'); }
@@ -17,6 +22,10 @@ export class OfficeScene extends Phaser.Scene {
     this.backdrop = this.add.image(0, 0, 'office').setOrigin(0.5);
     this.outgoing = this.add.image(0, 0, 'office').setOrigin(0.5).setAlpha(0);
     this.fan = new FanEffect(this);
+    this.kitchen = new KitchenView(this);
+    this.scare = new ScareManager();
+    this.scareUI = new ScareMeterUI(this.scare);
+    this.events.on(KITCHEN_EVENTS.CUSTOMER_TIMEOUT, this.onCustomerTimeout, this);
     this.state = new SurveillanceManager();
     this.monster = this.session.monster;
     this.registry.get('audio').start();
@@ -32,14 +41,33 @@ export class OfficeScene extends Phaser.Scene {
       this.ui.destroy();
       this.interference.destroy();
       this.fan.destroy();
+      this.kitchen.destroy();
+      this.events.off(KITCHEN_EVENTS.CUSTOMER_TIMEOUT, this.onCustomerTimeout, this);
+      this.scareUI.destroy();
       this.registry.get('audio').stop();
     });
     document.querySelector('#loading').hidden = true;
   }
 
+  // Un cliente zombie se cansó de esperar sin ser atendido: sube el susto y se dispara el jumpscare.
+  onCustomerTimeout(customer) {
+    if (this.finished) return;
+    const justFilled = this.scare.add();
+    this.scareUI.sync();
+    triggerJumpscare(this, customer); // espacio reservado: lo implementan los compañeros
+    // Qué ocurre al llenarse la barra aún no está definido: quien lo decida escucha este evento.
+    if (justFilled) this.events.emit(KITCHEN_EVENTS.SCARE_FULL);
+  }
+
   renderView(state) {
-    this.fan.setVisible(!state.monitorOpen);
+    // La cocina y la espalda (oficina/cámaras) son vistas excluyentes.
+    this.kitchen.setVisible(state.inKitchen);
+    this.backdrop.setVisible(!state.inKitchen);
+    this.outgoing.setVisible(!state.inKitchen);
+    this.fan.setVisible(!state.inKitchen && !state.monitorOpen);
     this.registry.get('audio').setMonitor(state.monitorOpen);
+    // En la cocina no se cambia la textura de fondo; al volver se recalcula con el estado vigente.
+    if (state.inKitchen) return;
     const next = getSurveillanceTexture(state, this.monster.location);
     if (next === this.backdrop.texture.key) return;
     if (state.monitorOpen) this.interference.pulse();
@@ -97,5 +125,7 @@ export class OfficeScene extends Phaser.Scene {
       layer.setPosition(width / 2, portraitMonitor ? height * 0.34 : height / 2).setScale(scale);
     }
     this.fan.fit(this.backdrop);
+    this.kitchen.fit();
   }
 }
+
