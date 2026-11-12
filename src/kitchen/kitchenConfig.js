@@ -11,7 +11,8 @@ export const BACK_OPENS_MONITOR = false;
 export const MAX_ITEMS_PER_ORDER = 3;
 
 // Tiempo (ms) que un cliente espera su pedido desde que llega a la ventana. Al llegar a 0 se va.
-export const CUSTOMER_PATIENCE_MS = 20000;
+// export const CUSTOMER_PATIENCE_MS = 20000;
+export const CUSTOMER_PATIENCE_MS = 5000;
 
 // Cuántos clientes pueden estar a la vez en la ventana.
 export const MAX_CUSTOMERS_AT_WINDOW = 2;
@@ -38,6 +39,8 @@ export const KITCHEN_ASSETS = Object.freeze([
   { key: 'customer-01', file: 'customer-01.png', kind: 'customer', width: 420, height: 840 },
   { key: 'customer-02', file: 'customer-02.png', kind: 'customer', width: 420, height: 840 },
   { key: 'customer-03', file: 'customer-03.png', kind: 'customer', width: 420, height: 840 },
+  { key: 'customer-04', file: 'customer-04.png', kind: 'customer', width: 420, height: 840 },
+  { key: 'customer-05', file: 'customer-05.png', kind: 'customer', width: 420, height: 840 },
 ]);
 
 export const STALL_KEY = 'kitchen-stall';
