@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { CustomerPicker } from '../kitchen/customerPicker.js';
 import { createOrder, orderEmojis } from '../kitchen/orders.js';
 import { formatWait, isWaitWarning } from '../kitchen/patience.js';
 import {
@@ -19,6 +20,7 @@ export class KitchenView {
   constructor(scene) {
     this.scene = scene;
     this.customers = [];
+    this.picker = new CustomerPicker(CUSTOMER_KEYS);
     this.visible = false;
     this.win = { x: 0, y: 0, w: 0, h: 0 };
 
@@ -48,16 +50,18 @@ export class KitchenView {
   }
 
   // Un cliente camina desde lejos hasta el vano; al llegar espera y se va.
-  spawnCustomer(key = Phaser.Utils.Array.GetRandom(CUSTOMER_KEYS), order = createOrder()) {
+  // Sin `key`, el zombie lo elige el CustomerPicker: salen todos antes de que se repita alguno.
+  spawnCustomer(key = null, order = createOrder()) {
     if (this.customers.length >= MAX_CUSTOMERS_AT_WINDOW) return null;
-    const sprite = this.scene.add.image(0, 0, key).setOrigin(0.5, 1).setTint(0xa9b8cf).setMask(this.mask);
+    const textureKey = key ?? this.picker.next(this.customers.map((customer) => customer.key));
+    const sprite = this.scene.add.image(0, 0, textureKey).setOrigin(0.5, 1).setTint(0xa9b8cf).setMask(this.mask);
     sprite.setVisible(this.visible);
     // Cada cliente ocupa un carril libre (se separan unos de otros). Un pelín de variación evita que se vea rígido.
     const free = LANES.map((_, i) => i).filter((i) => !this.customers.some((c) => c.lane === i));
     const lane = Phaser.Utils.Array.GetRandom(free);
     const bubble = this.createBubble(order);
     const customer = {
-      sprite, order, bubble, hud: bubble.getData('hud'), lane, p: 0,
+      key: textureKey, sprite, order, bubble, hud: bubble.getData('hud'), lane, p: 0,
       xr: LANES[lane] + Phaser.Math.FloatBetween(-0.02, 0.02), dead: false,
     };
     bubble.setVisible(this.visible);
