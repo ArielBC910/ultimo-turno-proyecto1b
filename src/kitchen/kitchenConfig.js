@@ -22,6 +22,10 @@ export const KITCHEN_EVENTS = Object.freeze({
   CUSTOMER_TIMEOUT: 'kitchen:customer-timeout',
   // Se emite una vez cuando la barra de susto llega al máximo.
   SCARE_FULL: 'kitchen:scare-full',
+  // Se emite al entregar un pedido completo. Recibe el cliente.
+  ORDER_SERVED: 'kitchen:order-served',
+  // Se emite cuando el jugador suelta la comida y esta cae al suelo. Recibe el id del producto.
+  FOOD_DROPPED: 'kitchen:food-dropped',
 });
 
 // Barra de susto: cada cliente que se cansa de esperar sin ser atendido la llena SCARE_PER_MISSED_CUSTOMER

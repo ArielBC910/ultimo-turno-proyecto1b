@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { CustomerPicker } from '../kitchen/customerPicker.js';
-import { createOrder, orderEmojis } from '../kitchen/orders.js';
+import { PRODUCTS, createOrder, REJECT_EMOJI } from '../kitchen/orders.js';
+import { OrderProgress, dropTargetAt } from '../kitchen/serving.js';
+import { ServingTrays } from './ServingTrays.js';
 import { formatWait, isWaitWarning } from '../kitchen/patience.js';
 import {
   CUSTOMER_KEYS, CUSTOMER_PATIENCE_MS, KITCHEN_EVENTS, MAX_CUSTOMERS_AT_WINDOW, STALL_KEY, WINDOW_RECT,
@@ -13,6 +15,16 @@ const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", s
 const BUBBLE = { fontPx: 64, pad: 14, tail: 14, emojiRatio: 0.12, gapRatio: 0.03, minShrink: 0.6, screenMargin: 8 };
 // Reloj de espera: píldora con el tiempo restante, apilada encima del globo (comparte su escala).
 const WAIT_STYLE = { fontPx: 28, pad: 12, gap: 8, clock: '🕒' };
+// Colores del cliente: normal, y al arrastrar comida sobre él (acepta / no la necesita).
+// `shadow` es la silueta oscura con la que se acercan: aún no se les puede dar su pedido.
+const TINT = { shadow: 0x0b0f17, idle: 0xa9b8cf, accepts: 0xffffff, rejects: 0xff9a9a };
+// Duración del paso de sombra a color cuando el cliente llega y empieza su reloj.
+const REVEAL_MS = 450;
+// Pausa antes de que un cliente satisfecho se vaya, para que se vea el pedido completo.
+const SERVED_LEAVE_MS = 500;
+// El área de entrega llega hasta un poco por debajo del vano (el mostrador), medida en alturas del vano.
+const DROP_BELOW_WINDOW = 0.45;
+
 // Un carril por cliente simultáneo, para que cada globo con su reloj quede separado de los demás.
 const LANES = customerLanes(MAX_CUSTOMERS_AT_WINDOW);
 
@@ -28,6 +40,11 @@ export class KitchenView {
     // La forma de la máscara no se añade a la escena: solo define la zona visible.
     this.maskShape = scene.make.graphics({ add: false });
     this.mask = this.maskShape.createGeometryMask();
+    this.trays = new ServingTrays(scene, {
+      onHover: (productId, x, y) => this.highlightCustomer(productId, x, y),
+      onRelease: (productId, x, y) => this.serve(productId, x, y),
+      onDrop: (productId) => scene.events.emit(KITCHEN_EVENTS.FOOD_DROPPED, productId),
+    });
     this.debug = new URLSearchParams(window.location.search).has('debugKitchen')
       ? scene.add.graphics().setDepth(10) : null;
 
@@ -43,9 +60,10 @@ export class KitchenView {
     this.visible = visible;
     this.stall.setVisible(visible);
     this.debug?.setVisible(visible);
+    this.trays.setVisible(visible);
     for (const customer of this.customers) {
       customer.sprite.setVisible(visible);
-      customer.bubble.setVisible(visible);
+      customer.bubble.setVisible(visible && customer.arrived); // el pedido solo se muestra tras llegar
     }
   }
 
@@ -54,7 +72,7 @@ export class KitchenView {
   spawnCustomer(key = null, order = createOrder()) {
     if (this.customers.length >= MAX_CUSTOMERS_AT_WINDOW) return null;
     const textureKey = key ?? this.picker.next(this.customers.map((customer) => customer.key));
-    const sprite = this.scene.add.image(0, 0, textureKey).setOrigin(0.5, 1).setTint(0xa9b8cf).setMask(this.mask);
+    const sprite = this.scene.add.image(0, 0, textureKey).setOrigin(0.5, 1).setTint(TINT.shadow).setMask(this.mask);
     sprite.setVisible(this.visible);
     // Cada cliente ocupa un carril libre (se separan unos de otros). Un pelín de variación evita que se vea rígido.
     const free = LANES.map((_, i) => i).filter((i) => !this.customers.some((c) => c.lane === i));
@@ -62,9 +80,10 @@ export class KitchenView {
     const bubble = this.createBubble(order);
     const customer = {
       key: textureKey, sprite, order, bubble, hud: bubble.getData('hud'), lane, p: 0,
+      progress: new OrderProgress(order), arrived: false, revealing: false, served: false,
       xr: LANES[lane] + Phaser.Math.FloatBetween(-0.02, 0.02), dead: false,
     };
-    bubble.setVisible(this.visible);
+    bubble.setVisible(false); // el pedido aparece cuando el cliente llega y empieza su reloj
     this.customers.push(customer);
     this.layout(customer);
     this.scene.tweens.addCounter({
@@ -75,9 +94,30 @@ export class KitchenView {
     return customer;
   }
 
+  // Al llegar, el cliente sale de la sombra: el color indica que ya se le puede atender.
+  reveal(customer) {
+    customer.revealing = true;
+    const from = Phaser.Display.Color.IntegerToColor(TINT.shadow);
+    const to = Phaser.Display.Color.IntegerToColor(TINT.idle);
+    const finish = () => { customer.revealing = false; if (!customer.dead) customer.sprite.setTint(TINT.idle); };
+    this.scene.tweens.addCounter({
+      from: 0, to: 100, duration: REVEAL_MS, ease: 'Sine.easeOut',
+      onUpdate: (tween) => {
+        if (customer.dead) return;
+        const c = Phaser.Display.Color.Interpolate.ColorWithColor(from, to, 100, tween.getValue());
+        customer.sprite.setTint(Phaser.Display.Color.GetColor(c.r, c.g, c.b));
+      },
+      onComplete: finish,
+    });
+  }
+
   // Empieza la cuenta atrás de la espera del cliente. Al llegar a 0 se agota su paciencia.
   startWaiting(customer) {
     if (customer.dead) return;
+    customer.arrived = true; // desde aquí se le puede entregar comida
+    this.reveal(customer);
+    customer.bubble.setAlpha(0).setVisible(this.visible);
+    this.scene.tweens.add({ targets: customer.bubble, alpha: 1, duration: REVEAL_MS, ease: 'Sine.easeOut' });
     customer.hud.setVisible(true); // el reloj (ya creado sobre el globo) aparece al llegar
     this.updateWaitHud(customer, CUSTOMER_PATIENCE_MS);
     customer.wait = this.scene.tweens.addCounter({
@@ -89,7 +129,7 @@ export class KitchenView {
 
   // El cliente se cansó de esperar sin ser atendido.
   expire(customer) {
-    if (customer.dead) return;
+    if (customer.dead || customer.served) return;
     // GANCHO JUMPSCARE / BARRA DE SUSTO: quien necesite reaccionar escucha este evento:
     //   scene.events.on(KITCHEN_EVENTS.CUSTOMER_TIMEOUT, (customer) => { ... })
     this.scene.events.emit(KITCHEN_EVENTS.CUSTOMER_TIMEOUT, customer);
@@ -131,7 +171,7 @@ export class KitchenView {
   // El contenedor tiene su origen en la punta de la flecha del globo.
   createBubble(order) {
     const { fontPx, pad, tail } = BUBBLE;
-    const text = this.scene.add.text(0, -tail - pad, orderEmojis(order).join(' '), { fontFamily: EMOJI_FONT, fontSize: `${fontPx}px` })
+    const text = this.scene.add.text(0, -tail - pad, new OrderProgress(order).labels((id) => PRODUCTS[id].emoji).join(' '), { fontFamily: EMOJI_FONT, fontSize: `${fontPx}px` })
       .setOrigin(0.5, 1);
     const w = text.width + pad * 2;
     const h = text.height + pad * 2;
@@ -142,7 +182,7 @@ export class KitchenView {
     const hud = this.createWaitHud(-tail - h);
     const bubble = this.scene.add.container(0, 0, [bg, text, hud]);
     // Altura total sin escalar (globo + reloj), usada para ajustar la escala en layout().
-    return bubble.setData({ height: h + tail + WAIT_STYLE.gap + hud.getData('h'), hud });
+    return bubble.setData({ height: h + tail + WAIT_STYLE.gap + hud.getData('h'), hud, text });
   }
 
   // Píldora con el reloj y el tiempo restante, situada justo encima del cuerpo del globo (bodyTop).
@@ -174,6 +214,65 @@ export class KitchenView {
       .lineStyle(3, warning ? 0xff3b3b : 0x8a8a7a, 1).strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2);
   }
 
+  // Zonas donde se puede soltar comida: el cuerpo visible de cada cliente que ya llegó y espera su pedido.
+  dropTargets() {
+    return this.customers.filter((c) => c.arrived && !c.dead && !c.served).map((customer) => {
+      const bounds = customer.sprite.getBounds();
+      // Limitado al vano (más el mostrador): la parte del sprite fuera de la máscara no cuenta.
+      return { customer, x: bounds.x, y: this.win.y, w: bounds.width, h: this.win.h * (1 + DROP_BELOW_WINDOW) };
+    });
+  }
+
+  // Resalta al cliente bajo el puntero: claro si necesita ese producto, rojizo si no. productId null = sin arrastre.
+  highlightCustomer(productId, x, y) {
+    const target = productId ? dropTargetAt(x, y, this.dropTargets()) : null;
+    for (const customer of this.customers) {
+      if (customer.dead || !customer.arrived || customer.revealing) continue; // en sombra o revelándose: no se toca
+      const tint = customer !== target?.customer ? TINT.idle
+        : customer.progress.needs(productId) ? TINT.accepts : TINT.rejects;
+      customer.sprite.setTint(tint);
+    }
+  }
+
+  // El jugador suelta `productId` en (x, y). Devuelve true si algún cliente lo aceptó; si no, la comida cae.
+  serve(productId, x, y) {
+    const target = dropTargetAt(x, y, this.dropTargets());
+    if (!target) return false;
+    const customer = target.customer;
+    const result = customer.progress.deliver(productId);
+    if (!result.accepted) {
+      this.showReject(customer);
+      return false; // producto equivocado: también cae
+    }
+    this.refreshBubble(customer);
+    if (result.complete) this.finishOrder(customer);
+    return true;
+  }
+
+  refreshBubble(customer) {
+    customer.bubble.getData('text').setText(customer.progress.labels((id) => PRODUCTS[id].emoji).join(' '));
+  }
+
+  // Pedido completo: se detiene su espera y se va contento (sin disparar CUSTOMER_TIMEOUT ni el susto).
+  finishOrder(customer) {
+    customer.served = true;
+    customer.wait?.stop();
+    customer.wait = null;
+    customer.hud.setVisible(false);
+    this.scene.events.emit(KITCHEN_EVENTS.ORDER_SERVED, customer);
+    this.scene.time.delayedCall(SERVED_LEAVE_MS, () => this.dismiss(customer));
+  }
+
+  // Marca 🚫 sobre el cliente que no pidió ese producto.
+  showReject(customer) {
+    const mark = this.scene.add.text(customer.sprite.x, customer.bubble.y, REJECT_EMOJI, {
+      fontFamily: EMOJI_FONT, fontSize: '56px',
+    }).setOrigin(0.5).setDepth(25);
+    this.scene.tweens.add({
+      targets: mark, y: mark.y - 40, alpha: 0, duration: 700, ease: 'Sine.easeOut', onComplete: () => mark.destroy(),
+    });
+  }
+
   // Clientes actuales con su pedido, para que otras partes (servir, paciencia) los consulten.
   getCustomers() {
     return this.customers.filter((customer) => !customer.dead);
@@ -192,9 +291,15 @@ export class KitchenView {
     this.maskShape.clear().fillStyle(0xffffff).fillRect(this.win.x, this.win.y, this.win.w, this.win.h);
     this.debug?.clear().lineStyle(2, 0x00ff66, 1).strokeRect(this.win.x, this.win.y, this.win.w, this.win.h);
     for (const customer of this.customers) this.layout(customer);
+    // Las bandejas ocupan la franja del mostrador bajo el vano, sin invadir los botones inferiores.
+    const winBottom = this.win.y + this.win.h;
+    const bottom = Math.min(height - 100, winBottom + this.win.h * 0.5);
+    const top = Math.min(winBottom + 8, bottom - 70);
+    this.trays.fit({ x: width * 0.15, y: top, w: width * 0.7, h: bottom - top });
   }
 
   destroy() {
+    this.trays.destroy();
     this.firstArrival.remove();
     this.arrivals.remove();
     for (const customer of this.customers) {
