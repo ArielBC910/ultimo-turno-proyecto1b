@@ -33,6 +33,15 @@ export const KITCHEN_EVENTS = Object.freeze({
 export const SCARE_MAX = 100;
 export const SCARE_PER_MISSED_CUSTOMER = 25;
 
+// Llegada progresiva de clientes: el tiempo entre llegadas baja linealmente de ARRIVAL_START_MS (inicio de la
+// noche) a ARRIVAL_END_MS (6:00 AM), con una variación aleatoria de ±ARRIVAL_JITTER para que no sea mecánico.
+export const FIRST_ARRIVAL_MS = 3000;
+export const ARRIVAL_START_MS = 16000;
+export const ARRIVAL_END_MS = 5000;
+export const ARRIVAL_JITTER = 0.25;
+// Si la ventana está llena cuando toca llegar, se reintenta pasado este tiempo.
+export const ARRIVAL_RETRY_MS = 1500;
+
 export const KITCHEN_PATH = 'assets/images/kitchen/';
 
 // Imágenes de la cocina. width/height solo se usan para generar el marcador de posición

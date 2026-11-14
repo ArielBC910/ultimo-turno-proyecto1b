@@ -3,9 +3,10 @@ import { CustomerPicker } from '../kitchen/customerPicker.js';
 import { PRODUCTS, createOrder, REJECT_EMOJI } from '../kitchen/orders.js';
 import { OrderProgress, dropTargetAt } from '../kitchen/serving.js';
 import { ServingTrays } from './ServingTrays.js';
+import { nextArrivalDelay } from '../kitchen/arrivals.js';
 import { formatWait, isWaitWarning } from '../kitchen/patience.js';
 import {
-  CUSTOMER_KEYS, CUSTOMER_PATIENCE_MS, KITCHEN_EVENTS, MAX_CUSTOMERS_AT_WINDOW, STALL_KEY, WINDOW_RECT,
+  ARRIVAL_RETRY_MS, FIRST_ARRIVAL_MS, CUSTOMER_KEYS, CUSTOMER_PATIENCE_MS, KITCHEN_EVENTS, MAX_CUSTOMERS_AT_WINDOW, STALL_KEY, WINDOW_RECT,
   customerLanes, customerPose, fitBubbleScale, windowToPixels,
 } from '../kitchen/kitchenConfig.js';
 
@@ -29,7 +30,8 @@ const DROP_BELOW_WINDOW = 0.45;
 const LANES = customerLanes(MAX_CUSTOMERS_AT_WINDOW);
 
 export class KitchenView {
-  constructor(scene) {
+  // getProgress devuelve el avance de la noche (0–1); con él los clientes llegan cada vez más seguido.
+  constructor(scene, getProgress = () => 0) {
     this.scene = scene;
     this.customers = [];
     this.picker = new CustomerPicker(CUSTOMER_KEYS);
@@ -48,12 +50,18 @@ export class KitchenView {
     this.debug = new URLSearchParams(window.location.search).has('debugKitchen')
       ? scene.add.graphics().setDepth(10) : null;
 
-    // Prototipo: llegan clientes de prueba para validar capas, máscara y escala.
-    // TODO: reemplazar con lógica real de pedidos.
-    // Aquí se enganchará después la lógica real de pedidos.
-    this.firstArrival = scene.time.delayedCall(1500, () => this.spawnCustomer());
-    this.arrivals = scene.time.addEvent({ delay: 7000, loop: true, callback: () => this.spawnCustomer() });
+    // Los clientes llegan cada vez más seguido a medida que avanza la noche (ver kitchen/arrivals.js).
+    this.getProgress = getProgress;
+    this.scheduleArrival(FIRST_ARRIVAL_MS);
     this.setVisible(false);
+  }
+
+  // Programa la siguiente llegada. Si la ventana está llena, reintenta pronto en vez de saltarse el turno.
+  scheduleArrival(delay) {
+    this.arrival = this.scene.time.delayedCall(delay, () => {
+      const spawned = this.spawnCustomer();
+      this.scheduleArrival(spawned ? nextArrivalDelay(this.getProgress()) : ARRIVAL_RETRY_MS);
+    });
   }
 
   setVisible(visible) {
@@ -300,8 +308,7 @@ export class KitchenView {
 
   destroy() {
     this.trays.destroy();
-    this.firstArrival.remove();
-    this.arrivals.remove();
+    this.arrival?.remove();
     for (const customer of this.customers) {
       customer.sprite.destroy();
       customer.bubble.destroy();
