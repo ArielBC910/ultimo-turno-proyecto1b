@@ -28,7 +28,7 @@ La compilación genera dist/. La vista previa usa http://127.0.0.1:4174. Las pru
 
 1. Pulsa Sobrevivir la noche en el menú.
 2. Revisa comedor, mostrador, bodega y pasillo. La cocina está detrás de la oficina y no tiene cámara.
-3. Usa la linterna: sin ella el acceso central queda casi negro.
+3. Usa la linterna: sin ella el acceso central queda casi negro. Cuando el wendigo llega a la oficina, aparece de pie en el centro del acceso, detrás del plano de la puerta.
 4. Si el wendigo llega al acceso, cierra la puerta. Tras entre 5 y 15 segundos continuos de cierre, se retira: escucharás un golpe metálico y un grito.
 5. Sobrevive hasta las 6:00 AM. Al ganar o perder puedes volver al menú o iniciar otra partida.
 
@@ -46,6 +46,8 @@ Cada segundo real equivale a un minuto del reloj del juego. La duración total e
 Frente al acceso, el wendigo mata tras acumular 15 segundos con la puerta abierta durante esa visita. Cerrar bloquea el ataque; reabrir antes de que se retire conserva el tiempo de exposición ya acumulado y cancela el intervalo de retirada. La linterna sirve para verlo y no lo ahuyenta.
 
 La IA toma decisiones entre salas conectadas, con mayor probabilidad de acercarse a la oficina y mayor actividad al avanzar la noche. Puede explorar y retroceder. Al retirarse elige comedor, mostrador o bodega; nunca el acceso ni el pasillo inmediato.
+
+Cada cámara tiene dos imágenes del wendigo en posiciones diferentes: una de pie y otra al ras del suelo o trepando por el techo. Durante cada visita se muestra la primera postura y, a mitad de la estancia, cambia a la segunda. Esto solo cambia la representación visual: no altera los tiempos, las decisiones de IA, la estática ni los filtros de iluminación.
 
 ## Audio y progreso
 
@@ -76,7 +78,7 @@ Arcade Physics permanece habilitado para desarrollo posterior. La amenaza actual
 
 ## Créditos y trabajo académico
 
-Los escenarios y variantes se generaron mediante image_gen.imagegen, usando las referencias del autor. Los prompts están en docs/RECURSOS_GENERADOS.json, docs/VARIANTES_OFICINA.json, docs/CAMARA_BODEGA.json y docs/WENDIGO_RECURSOS.json.
+Los escenarios y variantes se generaron mediante image_gen.imagegen, usando las referencias del autor. Los prompts están en docs/RECURSOS_GENERADOS.json, docs/VARIANTES_OFICINA.json, docs/CAMARA_BODEGA.json y docs/WENDIGO_RECURSOS.json. Las diez imágenes de pie se registran en docs/WENDIGO_DE_PIE_RECURSOS.json y las cuatro alternativas en suelo o techo en docs/WENDIGO_POSES_VARIADAS.json; las variantes anteriores se conservan como versiones previas y no se cargan en el juego.
 
 Phaser y Vite conservan sus licencias. Los efectos de rubberduck son CC0, con fuentes en docs/AUDIO.md. El ambiente es síntesis original regenerable con `node scripts/generate-ambient.mjs`.
 

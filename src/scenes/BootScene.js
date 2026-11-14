@@ -10,11 +10,17 @@ export class BootScene extends Phaser.Scene {
 
   preload() {
     this.failed = false;
+    for (const file of ['room-floor-ceramic.png','hambriento-room-cutout.png','room-wall-photo.png','room-wood-photo.png','room-steel-photo.png','prop-crt-photo.png','prop-fan-photo.png','food-photo-atlas.png']) {
+      this.load.image('room-photo:' + file, 'assets/images/' + file);
+    }
     for (const key of Object.values(OFFICE_VIEWS)) this.load.image(key, 'assets/images/' + key + '.png');
     for (const camera of CAMERAS) this.load.image(camera.key, 'assets/images/' + camera.file);
-    for (const camera of CAMERAS) this.load.image(camera.key + '-wendigo', 'assets/images/' + camera.key + '-wendigo.png');
-    this.load.image('office-wendigo-dark', 'assets/images/office-wendigo-dark.png');
-    this.load.image('office-wendigo-light', 'assets/images/office-wendigo-light.png');
+    for (const camera of CAMERAS) {
+      this.load.image(camera.key + '-wendigo', 'assets/images/' + camera.key + '-hambriento-a.png');
+      this.load.image(camera.key + '-wendigo-alt', 'assets/images/' + camera.key + '-hambriento-b.png');
+    }
+    this.load.image('office-wendigo-dark', 'assets/images/office-hambriento-dark.png');
+    this.load.image('office-wendigo-light', 'assets/images/office-hambriento-light.png');
     this.load.image('fan-rotor', 'assets/images/fan-rotor.png');
     preloadKitchenAssets(this);
     this.load.audio('door-bang', 'assets/audio/door-bang.ogg');

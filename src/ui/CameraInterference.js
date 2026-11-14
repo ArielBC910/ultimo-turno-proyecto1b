@@ -15,7 +15,14 @@ export class CameraInterference {
     }
     context.putImageData(noise, 0, 0);
     root.querySelector('.camera-noise').style.backgroundImage = 'url(' + canvas.toDataURL() + ')';
+    this.notice = document.createElement('div');
+    this.notice.className = 'signal-notice';
+    this.notice.setAttribute('role', 'status');
+    this.notice.textContent = 'SEÑAL PERDIDA · RESTABLECIENDO CONEXIÓN';
+    root.append(this.notice);
   }
+
+  setLost(lost) { this.root.classList.toggle('signal-lost', lost); }
 
   pulse() {
     clearTimeout(this.timeout);
@@ -26,5 +33,7 @@ export class CameraInterference {
   destroy() {
     clearTimeout(this.timeout);
     this.root.classList.remove('signal-interference');
+    this.root.classList.remove('signal-lost');
+    this.notice.remove();
   }
 }

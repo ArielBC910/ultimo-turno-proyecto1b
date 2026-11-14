@@ -1,0 +1,33 @@
+{
+  "tool": "image_gen built-in",
+  "references": [
+    "public/assets/images/office.png",
+    "public/assets/images/kitchen/kitchen-stall.png"
+  ],
+  "assets": [
+    {
+      "file": "room-wall-photo.png",
+      "prompt": "Create a seamless tileable photorealistic PBR base-color wall texture for a 3D horror diner office, based EXACTLY on the cream beige greasy square ceramic wall tiles in the attached reference. Full image is an orthographic straight-on square patch of dirty off-white ivory 15cm ceramic tiles with thin brown grout, aged yellowed glaze, subtle cracks and grease. SAME reference material and palette, not modern white tiles, not green military tiles. NO objects, doorway, furniture, red stripe, lighting effects, vignette, perspective or text. Neutral even diffuse light, extremely detailed photographic surface for close-up game materials, edges tile seamlessly. Only the ceramic wall material."
+    },
+    {
+      "file": "prop-crt-photo.png",
+      "prompt": "Use case: background-extraction / game prop. Recreate ONLY the vintage beige CRT monitor from the LEFT foreground of this reference as an isolated realistic game prop on fully transparent background. Straight-on near-frontal view with a little right-side depth, same thick yellowed dirty beige 1980s monitor housing, convex dark glass screen switched off reflecting faint warm lamp light, buttons below screen, vents and age spots. Preserve the photographic surface detail, grime and warm brown tones of the reference. Full object including base, no desk or cabinet, no other props, no room, no human, no text, logos or watermark. NOT a clean modern render, should look like the exact practical photographed monitor. Diffuse warm neutral light, subtle contact self-shadow only, no ground plane. Large detailed isolated monitor, tightly framed with transparent margins."
+    },
+    {
+      "file": "prop-fan-photo.png",
+      "prompt": "Use case: background-extraction game prop. Extract/recreate ONLY the antique metal DESK FAN from RIGHT foreground of the reference. Fully transparent background, full fan including heavy cream enamel pedestal and base, rusty bronze circular wire cage, central cap, worn slightly chipped cream enamel, realistic grime and photographic detail. Frontal view, no perspective distortion, as close as possible to exactly the reference fan. No desk, room, lamp, bowl or other objects, no text or logo, no background or ground plane. Tightly frame full object with small transparent margins. Real practical antique photographed in soft warm light, not illustration or clean 3D render. Keep fine grille wire detail and blades behind it."
+    },
+    {
+      "file": "room-wood-photo.png",
+      "prompt": "Photorealistic seamless tileable PBR base-color texture, square image. ONLY the very worn dark warm brown wooden desk surface from the attached reference office. Straight overhead orthographic material scan, subtle horizontal wood grain, old scratched varnish, dense small scratches and scuffs, dark brown with amber flecks, aged diner office countertop. Absolutely no objects, paperwork, cup, fan, food, chair, wall, perspective, text, highlights from lamps, vignettes or baked shadows. Uniform diffuse neutral lighting, fine sharp photographic material detail, edges seamless. Must match attached desk wood, not new planks or parquet flooring."
+    },
+    {
+      "file": "room-steel-photo.png",
+      "prompt": "Create a seamless square photorealistic material texture for 3D rendering. The worn greasy stainless steel countertop from attached old diner kitchen, neutral grey and warm tarnished brown patches, fine directional scratches, sparse small pitting and cooking grease at seams, dull brushed metal. Flat overhead orthographic material scan with uniform diffuse neutral illumination. No objects, food, trays, bottles, people, wall, perspective, cast shadows, dramatic reflections, text or vignette. Just continuous high detail steel texture matching reference, seamless outer edges. Aged but usable restaurant kitchen, not destroyed rusted scrap."
+    },
+    {
+      "file": "food-photo-atlas.png",
+      "prompt": "Photorealistic game prop atlas on a fully TRANSPARENT background. Four separate isolated fast food objects in a strict 2x2 evenly spaced grid, each entirely inside its own equal quadrant with generous transparent margins, no borders, text, labels or ground plane. TOP LEFT: a diner cheeseburger with sesame bun lettuce tomato patty cheese in a red-and-white check paper tray. TOP RIGHT: hot dog with mustard in a paper tray. BOTTOM LEFT: golden french fries in a red paper carton. BOTTOM RIGHT: tall dark brown paper soda cup with white lid and red straw. Same worn late-night diner kitchen style, warm amber photographic light and high detail as attached reference, not stylized icons, illustration or polished plastic. Front three-quarter view from slightly above, all four objects same camera angle and scale, isolated shadows within each object only. No duplicates or extra objects. Objects must not touch quadrant edges."
+    }
+  ]
+}

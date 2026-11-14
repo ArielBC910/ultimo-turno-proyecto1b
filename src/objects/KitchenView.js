@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CustomerPicker } from '../kitchen/customerPicker.js';
 import { createOrder, orderEmojis } from '../kitchen/orders.js';
 import { formatWait, isWaitWarning } from '../kitchen/patience.js';
+import { CookingStation } from '../kitchen/CookingStation.js';
 import {
   CUSTOMER_KEYS, CUSTOMER_PATIENCE_MS, KITCHEN_EVENTS, MAX_CUSTOMERS_AT_WINDOW, STALL_KEY, WINDOW_RECT,
   customerLanes, customerPose, fitBubbleScale, windowToPixels,
@@ -20,6 +21,8 @@ export class KitchenView {
   constructor(scene) {
     this.scene = scene;
     this.customers = [];
+    this.cooking = new CookingStation();
+    this.nextCustomerId = 1;
     this.picker = new CustomerPicker(CUSTOMER_KEYS);
     this.visible = false;
     this.win = { x: 0, y: 0, w: 0, h: 0 };
@@ -61,13 +64,13 @@ export class KitchenView {
     const lane = Phaser.Utils.Array.GetRandom(free);
     const bubble = this.createBubble(order);
     const customer = {
-      key: textureKey, sprite, order, bubble, hud: bubble.getData('hud'), lane, p: 0,
+      id: this.nextCustomerId++, key: textureKey, sprite, order, bubble, hud: bubble.getData('hud'), lane, p: 0,
       xr: LANES[lane] + Phaser.Math.FloatBetween(-0.02, 0.02), dead: false,
     };
     bubble.setVisible(this.visible);
     this.customers.push(customer);
     this.layout(customer);
-    this.scene.tweens.addCounter({
+    customer.arrival = this.scene.tweens.addCounter({
       from: 0, to: 1, duration: 9000, ease: 'Sine.easeOut',
       onUpdate: (tween) => { customer.p = tween.getValue(); this.layout(customer); },
       onComplete: () => this.startWaiting(customer), // al llegar al vano empieza a contar su espera
@@ -99,6 +102,7 @@ export class KitchenView {
   dismiss(customer) {
     if (customer.dead) return;
     customer.dead = true;
+    customer.arrival?.stop();
     customer.wait?.stop();
     customer.wait = null; // el reloj y el globo se desvanecen juntos
     this.scene.tweens.add({
@@ -109,6 +113,20 @@ export class KitchenView {
         this.customers = this.customers.filter((item) => item !== customer);
       },
     });
+  }
+
+  prepare(product) {
+    if (this.scene.finished || this.scene.state.station !== 'kitchen') return false;
+    return this.cooking.prepare(product);
+  }
+
+  serve(id) {
+    if (this.scene.finished || this.scene.state.station !== 'kitchen') return 'out-of-reach';
+    const customer = this.getCustomers().find(item => item.id === id);
+    if (!customer) return 'gone';
+    const result = this.cooking.serve(customer.order, Boolean(customer.wait));
+    if (result === 'served') this.dismiss(customer);
+    return result;
   }
 
   layout(customer) {

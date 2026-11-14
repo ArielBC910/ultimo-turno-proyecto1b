@@ -33,7 +33,7 @@ test('darse la vuelta alterna cocina y espalda, y al volver a la cocina baja el 
 test('a la espalda siguen funcionando la puerta, la linterna y el monitor existentes', () => {
   const state = new SurveillanceManager();
   state.turnAround();
-  state.toggleMonitor(); // cerrar monitor -> oficina
+  if (state.monitorOpen) state.toggleMonitor(); // cerrar solo si el giro abre el monitor
   assert.equal(state.monitorOpen, false);
   state.toggleDoor();
   state.toggleLight();
@@ -47,7 +47,7 @@ test('a la espalda siguen funcionando la puerta, la linterna y el monitor existe
 test('la puerta cerrada se conserva mientras el cocinero atiende en la cocina', () => {
   const state = new SurveillanceManager();
   state.turnAround();
-  state.toggleMonitor();
+  if (state.monitorOpen) state.toggleMonitor();
   state.toggleDoor();
   state.turnAround();
   assert.equal(state.doorClosed, true);

@@ -22,7 +22,8 @@ export class MonsterManager {
   }
 
   roll() { return Math.max(0, Math.min(0.999999999, this.random())); }
-  nextDuration(progress) { return (6500 + this.roll() * 6500) * (1 - Math.min(1, progress) * 0.3); }
+  // Cada postura dura al menos 15 s, incluso al final de la noche.
+  nextDuration(progress) { return (34000 + this.roll() * 10000) * (1 - Math.min(1, progress) * 0.1); }
 
   chooseNext(progress) {
     const neighbors = ROOM_GRAPH[this.location];
