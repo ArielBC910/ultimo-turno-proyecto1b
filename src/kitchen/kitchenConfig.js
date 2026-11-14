@@ -18,7 +18,7 @@ export const MAX_CUSTOMERS_AT_WINDOW = 2;
 
 // Eventos que emite la escena para que otras partes (jumpscare, barra de susto) reaccionen.
 export const KITCHEN_EVENTS = Object.freeze({
-  // Se emite cuando se agota la espera de un cliente sin ser atendido. Recibe el cliente como argumento.
+  // Se emite cuando un cliente se cansa de esperar o recibe un producto equivocado. Recibe el cliente y el motivo ('timeout' | 'wrong').
   CUSTOMER_TIMEOUT: 'kitchen:customer-timeout',
   // Se emite una vez cuando la barra de susto llega al máximo.
   SCARE_FULL: 'kitchen:scare-full',
