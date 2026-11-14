@@ -4,7 +4,17 @@ import { NIGHT_DURATION } from '../managers/NightSession.js';
 export class ResultScene extends Phaser.Scene {
   constructor() { super('Result'); }
 
-  create({ result, elapsed = 0 } = {}) {
+  create({ result, elapsed = 0, cause } = {}) {
+    const attack = {
+      rabbit: 'El Conejo de Arpillera cruzó el mostrador.',
+      void: 'El Ente del Vacío apagó la ventanilla.',
+      hermit: 'El Ermitaño de la Costura cruzó el mostrador.',
+      smile: 'La Sonrisa Eterna atravesó la ventanilla.',
+      mutant: 'El Mutante Parasitario atravesó la ventanilla.',
+      beast: 'La Bestia de Cráneo destrozó el mostrador.',
+      twins: 'Los Gemelos de Arpillera golpearon la ventanilla.',
+      doll: 'La Muñeca de Trapo cruzó el mostrador.',
+    }[cause];
     const won = result === 'won';
     const root = document.querySelector('#surveillance');
     const panel = document.querySelector('#result-screen');
@@ -13,20 +23,22 @@ export class ResultScene extends Phaser.Scene {
     document.querySelector('#camera-view').hidden = true;
     document.querySelector('#result-eyebrow').textContent = won ? 'TURNO COMPLETADO' : 'SEÑAL PERDIDA';
     document.querySelector('#result-title').textContent = won ? '6:00 AM' : 'NO LLEGASTE AL AMANECER';
-    document.querySelector('#result-message').textContent = won ? 'La noche terminó. Sigues aquí.' : 'El wendigo entró por el acceso frontal.';
+    document.querySelector('#result-message').textContent = won ? 'La noche terminó. Sigues aquí.'
+      : attack ?? 'El wendigo entró por el acceso frontal.';
     const minutes = Math.floor(elapsed / 60000);
     const seconds = Math.floor(elapsed / 1000) % 60;
     document.querySelector('#result-time').textContent = 'SOBREVIVISTE ' + minutes + ':' + String(seconds).padStart(2, '0') + ' / 6:00';
     document.querySelector('#result-progress').style.width = Math.min(100, elapsed / NIGHT_DURATION * 100) + '%';
-    this.backdrop = this.add.image(0, 0, won ? 'office' : 'office-wendigo-light').setOrigin(0.5);
+    this.backdrop = this.add.image(0, 0, won ? 'office' : attack ? `${cause}-phase-3` : 'office-wendigo-light').setOrigin(0.5);
+    const fitScale = !won && ['smile', 'hermit', 'void'].includes(cause) ? Math.min : Math.max;
     const fit = () => {
       const image = this.backdrop.texture.getSourceImage();
-      this.backdrop.setPosition(this.scale.width / 2, this.scale.height / 2).setScale(Math.max(this.scale.width / image.width, this.scale.height / image.height));
+      this.backdrop.setPosition(this.scale.width / 2, this.scale.height / 2).setScale(fitScale(this.scale.width / image.width, this.scale.height / image.height));
     };
     fit();
     this.scale.on('resize', fit);
     const audio = this.registry.get('audio');
-    if (!won) audio.defeat();
+    if (!won && !attack) audio.defeat();
     const abort = new AbortController();
     let leaving = false;
     const go = (scene) => {

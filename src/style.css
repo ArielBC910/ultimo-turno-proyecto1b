@@ -1458,10 +1458,27 @@ kbd {
     min-width: 0;
   }
 
-  .kitchen-mode #turn-button {
-    flex-direction: row;
-    justify-content: center;
-  }
+}
+
+.kitchen-mode .console {
+  bottom: 62px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.kitchen-mode .console-meta,
+.kitchen-mode #turn-button small {
+  display: none;
+}
+
+.kitchen-mode #turn-button {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 12px;
+  flex-direction: row;
+  justify-content: center;
 }
 
 /* Barra de susto: abajo a la izquierda; se llena cuando un cliente zombie se queda sin atender. */
@@ -1530,4 +1547,14 @@ kbd {
     padding: 5px 7px;
     gap: 6px;
   }
+}
+.rabbit-attack .topbar,
+.rabbit-attack .console,
+.rabbit-attack .office-label,
+.rabbit-attack #return-menu,
+.rabbit-attack .prototype-note,
+.rabbit-attack .scare-meter,
+.rabbit-attack .camera-panel,
+.rabbit-attack .office-shade {
+  visibility: hidden;
 }

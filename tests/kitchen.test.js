@@ -33,7 +33,7 @@ test('darse la vuelta alterna cocina y espalda, y al volver a la cocina baja el 
 test('a la espalda siguen funcionando la puerta, la linterna y el monitor existentes', () => {
   const state = new SurveillanceManager();
   state.turnAround();
-  state.toggleMonitor(); // cerrar monitor -> oficina
+  if (state.monitorOpen) state.toggleMonitor();
   assert.equal(state.monitorOpen, false);
   state.toggleDoor();
   state.toggleLight();
@@ -47,7 +47,7 @@ test('a la espalda siguen funcionando la puerta, la linterna y el monitor existe
 test('la puerta cerrada se conserva mientras el cocinero atiende en la cocina', () => {
   const state = new SurveillanceManager();
   state.turnAround();
-  state.toggleMonitor();
+  if (state.monitorOpen) state.toggleMonitor();
   state.toggleDoor();
   state.turnAround();
   assert.equal(state.doorClosed, true);
@@ -72,16 +72,20 @@ test('el vano se escala con la imagen y se mantiene dentro de ella', () => {
   assert.equal(double.w, win.w * 2);
 });
 
-test('el cliente crece y se acerca al mostrador de forma monótona', () => {
+test('el cliente entra por la izquierda y avanza hacia su posición en el mostrador', () => {
   const win = { x: 100, y: 50, w: 400, h: 300 };
   let previous = customerPose(0, 0.5, win);
   for (let p = 0.1; p <= 1.0001; p += 0.1) {
     const pose = customerPose(p, 0.5, win);
+    assert.ok(pose.x > previous.x);
     assert.ok(pose.displayHeight > previous.displayHeight);
     previous = pose;
   }
   const far = customerPose(0, 0.5, win);
+  const wideSprite = customerPose(0, 0.5, win, undefined, 1.2);
   const near = customerPose(1, 0.5, win);
+  assert.ok(far.x < win.x);
+  assert.ok(wideSprite.x + wideSprite.displayHeight * 1.2 / 2 < win.x);
   assert.ok(far.y < near.y);
   assert.equal(near.x, win.x + win.w * 0.5);
   assert.deepEqual(customerPose(-5, 0.5, win), customerPose(0, 0.5, win));
