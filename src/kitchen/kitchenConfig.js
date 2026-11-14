@@ -48,28 +48,31 @@ export const KITCHEN_PATH = 'assets/images/kitchen/';
 // cuando el archivo todavía no existe en public/assets/images/kitchen/.
 export const KITCHEN_ASSETS = Object.freeze([
   { key: 'kitchen-stall', file: 'kitchen-stall.png', kind: 'stall', width: 1672, height: 941 },
-  { key: 'customer-01', file: 'customer-01.png', kind: 'customer', width: 420, height: 840 },
-  { key: 'customer-02', file: 'customer-02.png', kind: 'customer', width: 420, height: 840 },
-  { key: 'customer-03', file: 'customer-03.png', kind: 'customer', width: 420, height: 840 },
-  { key: 'customer-04', file: 'customer-04.png', kind: 'customer', width: 420, height: 840 },
-  { key: 'customer-05', file: 'customer-05.png', kind: 'customer', width: 420, height: 840 },
+  ...['conejito', 'muneca', 'mascara', 'gemelos', 'canino', 'agazapado', 'sonrisa', 'cosido', 'sombra']
+    .map((name, index) => ({
+      key: 'customer-' + String(index + 1).padStart(2, '0'),
+      file: name + '.png', kind: 'customer', width: 600, height: 900,
+    })),
 ]);
 
 export const STALL_KEY = 'kitchen-stall';
 export const CUSTOMER_KEYS = Object.freeze(KITCHEN_ASSETS.filter((a) => a.kind === 'customer').map((a) => a.key));
 
 export function isKitchenAsset(key) {
-  return KITCHEN_ASSETS.some((asset) => asset.key === key);
+  return KITCHEN_ASSETS.some((asset) => asset.key === key)
+    || CUSTOMER_KEYS.some((customer) => key === customer + '-profile' || key === customer + '-step');
 }
 
 // Vano de atención, en fracciones (0–1) de la imagen kitchen-stall.png.
 // Ajústalo hasta que coincida con el hueco de tu ilustración (abre el juego con ?debugKitchen).
 export const WINDOW_RECT = Object.freeze({ x: 0.35, y: 0.122, w: 0.42, h: 0.5 });
+// Borde de la pared izquierda en la ilustración del puesto.
+export const CUSTOMER_ENTRY_X = 0.182;
 
 // Recorrido del cliente. "feet" es la altura de los pies y "height" la altura del sprite,
 // ambas en múltiplos de la altura del vano. Con feet > 1 los pies quedan tras el mostrador.
 export const CUSTOMER_PATH = Object.freeze({
-  far: { feet: 0.62, height: 0.4 },
+  far: { feet: 1.42, height: 1.07 },
   near: { feet: 1.55, height: 1.2 },
 });
 
@@ -85,13 +88,14 @@ export function windowToPixels(image, rect = WINDOW_RECT) {
 
 // Posición y tamaño de un cliente para un progreso p (0 = lejos, 1 = en el vano).
 // xr (0–1) es su posición horizontal dentro del vano.
-export function customerPose(p, xr, win, path = CUSTOMER_PATH) {
+export function customerPose(p, xr, win, path = CUSTOMER_PATH, spriteAspect = 1, entryX = win.x) {
   const t = clamp01(p);
   const feet = lerp(path.far.feet, path.near.feet, t);
   const height = lerp(path.far.height, path.near.height, t);
-  // Leve balanceo al caminar; se apaga al llegar.
-  const sway = Math.sin(t * 55) * 0.006 * win.h * (1 - t);
-  return { x: win.x + win.w * xr, y: win.y + win.h * feet + sway, displayHeight: win.h * height };
+  // El borde derecho del sprite empieza oculto detrás de la jamba izquierda.
+  const startX = entryX - win.x - win.h * (path.far.height * spriteAspect / 2 + 0.03);
+  const x = win.x + lerp(startX, win.w * xr, t);
+  return { x, y: win.y + win.h * feet, displayHeight: win.h * height };
 }
 
 // Escala del globo de pedido: la natural, reducida si no cabe bajo el contador (nunca por debajo de minFactor).

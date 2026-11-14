@@ -1,8 +1,42 @@
+import { RABBIT_SOUNDS } from './rabbitAudio.js';
 import { KITCHEN_ASSETS, KITCHEN_PATH, WINDOW_RECT } from './kitchenConfig.js';
 
 
 export function preloadKitchenAssets(scene) {
-  for (const asset of KITCHEN_ASSETS) scene.load.image(asset.key, KITCHEN_PATH + asset.file);
+  for (const sound of RABBIT_SOUNDS) scene.load.audio(`rabbit-${sound}`, `assets/audio/rabbit-${sound}.wav`);
+  scene.load.audio('doll-pin', 'assets/audio/doll-pin.wav');
+  for (const sound of ['idle', 'unease', 'mutation', 'impact']) {
+    scene.load.audio(`doll-${sound}`, `assets/audio/doll-${sound}.wav`);
+  }
+  for (const sound of ['idle', 'unease', 'mutation', 'impact']) {
+    scene.load.audio(`twins-${sound}`, `assets/audio/twins-${sound}.wav`);
+  }
+  for (const sound of ['idle', 'unease', 'mutation', 'impact']) {
+    scene.load.audio(`beast-${sound}`, `assets/audio/beast-${sound}.wav`);
+  }
+  for (const sound of ['idle', 'unease', 'mutation', 'impact']) {
+    scene.load.audio(`void-${sound}`, `assets/audio/void-${sound}.wav`);
+    scene.load.audio(`hermit-${sound}`, `assets/audio/hermit-${sound}.wav`);
+    scene.load.audio(`smile-${sound}`, `assets/audio/smile-${sound}.wav`);
+    scene.load.audio(`mutant-${sound}`, `assets/audio/mutant-${sound}.wav`);
+  }
+  for (const phase of [1, 2, 3]) {
+    scene.load.image(`void-phase-${phase}`, KITCHEN_PATH + `sombra-fase-${phase}.png`);
+    scene.load.image(`hermit-phase-${phase}`, KITCHEN_PATH + `cosido-fase-${phase}.png`);
+    scene.load.image(`smile-phase-${phase}`, KITCHEN_PATH + `sonrisa-fase-${phase}.png`);
+    scene.load.image(`mutant-phase-${phase}`, KITCHEN_PATH + `agazapado-fase-${phase}.png`);
+    scene.load.image(`beast-phase-${phase}`, KITCHEN_PATH + `canino-fase-${phase}.png`);
+    scene.load.image(`twins-phase-${phase}`, KITCHEN_PATH + `gemelos-fase-${phase}.png`);
+    scene.load.image(`doll-phase-${phase}`, KITCHEN_PATH + `muneca-fase-${phase}.png`);
+    scene.load.image(`rabbit-phase-${phase}`, KITCHEN_PATH + `conejito-fase-${phase}.png`);
+  }
+  for (const asset of KITCHEN_ASSETS) {
+    scene.load.image(asset.key, KITCHEN_PATH + asset.file);
+    if (asset.kind === 'customer') {
+      scene.load.image(asset.key + '-profile', KITCHEN_PATH + asset.file.replace('.png', '-profile.png'));
+      scene.load.image(asset.key + '-step', KITCHEN_PATH + asset.file.replace('.png', '-step.png'));
+    }
+  }
 }
 
 export function ensureKitchenTextures(scene) {

@@ -20,6 +20,8 @@ export class AudioManager {
   start() {
     if (this.game.sound.locked) this.game.sound.unlock();
     this.loops ??= {};
+    this.nightDucked = false;
+    this.monitorOpen = false;
     const layers = [
       ['night-music', 0.28, 0],
       ['night-ambient', 0.055, 0],
@@ -33,9 +35,19 @@ export class AudioManager {
   }
 
   setMonitor(open) {
+    this.monitorOpen = open;
+    this.setNightDuck(this.nightDucked);
+  }
+
+  setNightDuck(ducked) {
+    this.nightDucked = ducked;
+    const gain = ducked ? 0.08 : 1;
+    const open = this.monitorOpen;
+    this.loops?.['night-music']?.setVolume(0.28 * gain);
+    this.loops?.['night-ambient']?.setVolume(0.055 * gain);
     // El ventilador permanece en la oficina, más tenue al concentrarse en el monitor.
-    this.loops?.['fan-loop']?.setVolume(open ? 0.17 : 0.31);
-    this.loops?.['night-crickets']?.setVolume(open ? 0.12 : 0.19);
+    this.loops?.['fan-loop']?.setVolume((open ? 0.17 : 0.31) * gain);
+    this.loops?.['night-crickets']?.setVolume((open ? 0.12 : 0.19) * gain);
   }
 
   interaction(kind, value) {

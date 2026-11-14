@@ -54,12 +54,13 @@ export class OfficeScene extends Phaser.Scene {
     if (this.finished) return;
     const justFilled = this.scare.add();
     this.scareUI.sync();
-    triggerJumpscare(this, customer); // espacio reservado: lo implementan los compañeros
     // Qué ocurre al llenarse la barra aún no está definido: quien lo decida escucha este evento.
     if (justFilled) this.events.emit(KITCHEN_EVENTS.SCARE_FULL);
+    triggerJumpscare(this, customer);
   }
 
   renderView(state) {
+    if (this.finished) return;
     // La cocina y la espalda (oficina/cámaras) son vistas excluyentes.
     this.kitchen.setVisible(state.inKitchen);
     this.backdrop.setVisible(!state.inKitchen);
