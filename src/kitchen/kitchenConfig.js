@@ -18,16 +18,29 @@ export const MAX_CUSTOMERS_AT_WINDOW = 2;
 
 // Eventos que emite la escena para que otras partes (jumpscare, barra de susto) reaccionen.
 export const KITCHEN_EVENTS = Object.freeze({
-  // Se emite cuando se agota la espera de un cliente sin ser atendido. Recibe el cliente como argumento.
+  // Se emite cuando un cliente se cansa de esperar o recibe un producto equivocado. Recibe el cliente y el motivo ('timeout' | 'wrong').
   CUSTOMER_TIMEOUT: 'kitchen:customer-timeout',
   // Se emite una vez cuando la barra de susto llega al máximo.
   SCARE_FULL: 'kitchen:scare-full',
+  // Se emite al entregar un pedido completo. Recibe el cliente.
+  ORDER_SERVED: 'kitchen:order-served',
+  // Se emite cuando el jugador suelta la comida y esta cae al suelo. Recibe el id del producto.
+  FOOD_DROPPED: 'kitchen:food-dropped',
 });
 
 // Barra de susto: cada cliente que se cansa de esperar sin ser atendido la llena SCARE_PER_MISSED_CUSTOMER
 // puntos, hasta SCARE_MAX (con 100 y 25, a la cuarta falla se llena).
 export const SCARE_MAX = 100;
 export const SCARE_PER_MISSED_CUSTOMER = 25;
+
+// Llegada progresiva de clientes: el tiempo entre llegadas baja linealmente de ARRIVAL_START_MS (inicio de la
+// noche) a ARRIVAL_END_MS (6:00 AM), con una variación aleatoria de ±ARRIVAL_JITTER para que no sea mecánico.
+export const FIRST_ARRIVAL_MS = 3000;
+export const ARRIVAL_START_MS = 16000;
+export const ARRIVAL_END_MS = 5000;
+export const ARRIVAL_JITTER = 0.25;
+// Si la ventana está llena cuando toca llegar, se reintenta pasado este tiempo.
+export const ARRIVAL_RETRY_MS = 1500;
 
 export const KITCHEN_PATH = 'assets/images/kitchen/';
 

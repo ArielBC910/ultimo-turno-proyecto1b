@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { SurveillanceManager } from '../managers/SurveillanceManager.js';
 import { SurveillanceUI } from '../ui/SurveillanceUI.js';
 import { getSurveillanceTexture } from '../config.js';
-import { NightSession } from '../managers/NightSession.js';
+import { NightSession, NIGHT_DURATION } from '../managers/NightSession.js';
 import { CameraInterference } from '../ui/CameraInterference.js';
 import { FanEffect } from '../objects/FanEffect.js';
 import { KitchenView } from '../objects/KitchenView.js';
@@ -22,7 +22,7 @@ export class OfficeScene extends Phaser.Scene {
     this.backdrop = this.add.image(0, 0, 'office').setOrigin(0.5);
     this.outgoing = this.add.image(0, 0, 'office').setOrigin(0.5).setAlpha(0);
     this.fan = new FanEffect(this);
-    this.kitchen = new KitchenView(this);
+    this.kitchen = new KitchenView(this, () => this.session.elapsed / NIGHT_DURATION);
     this.scare = new ScareManager();
     this.scareUI = new ScareMeterUI(this.scare);
     this.events.on(KITCHEN_EVENTS.CUSTOMER_TIMEOUT, this.onCustomerTimeout, this);
