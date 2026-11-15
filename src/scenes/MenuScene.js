@@ -12,8 +12,8 @@ export class MenuScene extends Phaser.Scene {
     document.querySelector('#loading').hidden = true;
     this.registry.get('audio').stop();
     const progress = this.registry.get('progress').data;
-    const seconds = Math.floor(progress.bestSurvivalMs / 1000);
-    document.querySelector('#menu-best').textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+    const bestHour = Math.min(6,Math.floor(progress.bestSurvivalMs/60000)) || 12;
+    document.querySelector('#menu-best').textContent = bestHour + ' AM';
     document.querySelector('#menu-wins').textContent = String(progress.wins);
     this.background = this.add.image(0, 0, 'cam04-wendigo').setOrigin(0.5);
     const fit = () => {

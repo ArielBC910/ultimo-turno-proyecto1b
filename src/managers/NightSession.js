@@ -14,6 +14,8 @@ export class NightSession {
     return { hours: Math.floor(gameMinutes / 60) || 12, minutes: gameMinutes % 60 };
   }
 
+  get clockLabel() { return `${this.clock.hours} AM`; }
+
   update(delta, doorClosed) {
     if (this.result || !Number.isFinite(delta) || delta <= 0) return [];
     const step = Math.min(delta, NIGHT_DURATION - this.elapsed);

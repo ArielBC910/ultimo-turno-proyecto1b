@@ -4,7 +4,7 @@ import { NIGHT_DURATION } from '../managers/NightSession.js';
 export class ResultScene extends Phaser.Scene {
   constructor() { super('Result'); }
 
-  create({ result, elapsed = 0 } = {}) {
+  create({ result, elapsed = 0, cause, served = 0, attackPlayed = false } = {}) {
     const won = result === 'won';
     const root = document.querySelector('#surveillance');
     const panel = document.querySelector('#result-screen');
@@ -12,11 +12,10 @@ export class ResultScene extends Phaser.Scene {
     panel.hidden = false;
     document.querySelector('#camera-view').hidden = true;
     document.querySelector('#result-eyebrow').textContent = won ? 'TURNO COMPLETADO' : 'SEÑAL PERDIDA';
-    document.querySelector('#result-title').textContent = won ? '6:00 AM' : 'NO LLEGASTE AL AMANECER';
-    document.querySelector('#result-message').textContent = won ? 'La noche terminó. Sigues aquí.' : 'El wendigo entró por el acceso frontal.';
-    const minutes = Math.floor(elapsed / 60000);
-    const seconds = Math.floor(elapsed / 1000) % 60;
-    document.querySelector('#result-time').textContent = 'SOBREVIVISTE ' + minutes + ':' + String(seconds).padStart(2, '0') + ' / 6:00';
+    document.querySelector('#result-title').textContent = won ? '6 AM' : 'NO LLEGASTE AL AMANECER';
+    document.querySelector('#result-message').textContent = (won ? 'La noche terminó. Sigues aquí.' : cause === 'customers' ? 'Demasiados clientes se fueron sin su pedido. El susto te venció.' : 'El wendigo entró por el acceso frontal.') + ' Pedidos entregados: ' + served + '.';
+    const hour = Math.min(6,Math.floor(elapsed/60000)) || 12;
+    document.querySelector('#result-time').textContent = 'TURNO FINALIZADO A LAS ' + hour + ' AM';
     document.querySelector('#result-progress').style.width = Math.min(100, elapsed / NIGHT_DURATION * 100) + '%';
     this.backdrop = this.add.image(0, 0, won ? 'office' : 'office-wendigo-light').setOrigin(0.5);
     const fit = () => {
@@ -26,7 +25,7 @@ export class ResultScene extends Phaser.Scene {
     fit();
     this.scale.on('resize', fit);
     const audio = this.registry.get('audio');
-    if (!won) audio.defeat();
+    if (!won && !attackPlayed) audio.defeat();
     const abort = new AbortController();
     let leaving = false;
     const go = (scene) => {

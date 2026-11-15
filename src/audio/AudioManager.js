@@ -38,17 +38,44 @@ export class AudioManager {
     this.loops?.['night-crickets']?.setVolume(open ? 0.12 : 0.19);
   }
 
+  setRoomPose(x, z, angle) {
+    const fan = this.loops?.['fan-loop'];
+    if (!fan) return;
+    const dx = 1.04 - x, dz = -1.2 - z;
+    const distance = Math.hypot(dx, dz);
+    fan.setPan(Math.max(-1, Math.min(1, (-Math.sin(angle) * dx + Math.cos(angle) * dz) / Math.max(.5, distance))));
+    fan.setVolume(.31 / (1 + distance * .25));
+  }
+
   interaction(kind, value) {
     if (kind === 'light') this.game.sound.play('flashlight-click', { volume: 0.52 });
     if (kind === 'door') this.game.sound.play(value ? 'door-close' : 'door-open', { volume: value ? 0.55 : 0.43 });
   }
+
+  arrival() { this.game.sound.play('door-bang', { volume: .42, rate: .7, pan: 0 }); }
+
+  powerWarning(type) { this.game.sound.play('flashlight-click', { volume: type === 'power-empty' ? .65 : .35, rate: .65 }); }
 
   retreat() {
     this.game.sound.play('door-bang', { volume: 0.8 });
     this.game.sound.play('wendigo-scream', { volume: 0.43, rate: 0.84, delay: 0.12 });
   }
 
-  defeat() { this.game.sound.play('wendigo-scream', { volume: 0.55, rate: 0.94 }); }
+  defeat() {
+    if (this.defeatSound?.isPlaying) return;
+    this.game.sound.stopAll();
+    this.defeatSound ??= this.game.sound.add('foxy-jumpscare', { volume: .8, rate: 1 });
+    this.defeatSound.play();
+  }
 
-  stop() { this.game.sound.stopAll(); }
+  // Pausa: congela todos los sonidos donde están y los retoma al continuar.
+  pause() { this.game.sound.pauseAll(); }
+
+  resume() { this.game.sound.resumeAll(); }
+
+  stop(preserveDefeat = false) {
+    if (preserveDefeat) { for (const loop of Object.values(this.loops ?? {})) loop.stop(); }
+    else this.game.sound.stopAll();
+  }
 }
+
