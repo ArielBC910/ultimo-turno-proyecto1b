@@ -23,8 +23,9 @@ const TINT = { shadow: 0x0b0f17, idle: 0xa9b8cf, accepts: 0xffffff, rejects: 0xf
 const REVEAL_MS = 450;
 // Pausa antes de que un cliente satisfecho se vaya, para que se vea el pedido completo.
 const SERVED_LEAVE_MS = 500;
-// El área de entrega llega hasta un poco por debajo del vano (el mostrador), medida en alturas del vano.
-const DROP_BELOW_WINDOW = 0.45;
+// El área de entrega es el cuerpo visible del cliente (el vano). Si se extendiera por debajo, invadiría las
+// bandejas y bastaría un arrastre mínimo dentro de ellas para atender. Medida en alturas del vano.
+const DROP_BELOW_WINDOW = 0;
 
 // Un carril por cliente simultáneo, para que cada globo con su reloj quede separado de los demás.
 const LANES = customerLanes(MAX_CUSTOMERS_AT_WINDOW);
@@ -99,7 +100,6 @@ export class KitchenView {
     this.mask = this.maskShape.createGeometryMask();
     this.trays = new ServingTrays(scene, {
       onHover: (productId, x, y) => this.highlightCustomer(productId, x, y),
-      onSelect: (productId) => this.serveSelected(productId),
       onRelease: (productId, x, y) => this.serve(productId, x, y),
       onDrop: (productId) => scene.events.emit(KITCHEN_EVENTS.FOOD_DROPPED, productId),
     });
@@ -338,7 +338,7 @@ export class KitchenView {
     const spriteHeight = customer.sprite.height * scale;
     const crop = customer.key === TWINS_KEY && customer.impatience === 2 ? 0.50
       : customer.key === DOLL_KEY && customer.impatience === 2
-      ? 0.50 : CHILD_COUNTER_CROP[customer.key] ?? 0.38;
+        ? 0.50 : CHILD_COUNTER_CROP[customer.key] ?? 0.38;
     const baseY = counterY + spriteHeight * crop;
     // Los clientes más cercanos se dibujan delante de los lejanos.
     customer.sprite
@@ -451,12 +451,6 @@ export class KitchenView {
     const target = dropTargetAt(x, y, this.dropTargets());
     if (!target) return false;
     return this.deliver(target.customer, productId);
-  }
-
-  serveSelected(productId) {
-    const matches = this.customers.filter((customer) =>
-      customer.arrived && !customer.dead && !customer.served && customer.progress.needs(productId));
-    if (matches.length === 1) this.deliver(matches[0], productId);
   }
 
   deliver(customer, productId) {

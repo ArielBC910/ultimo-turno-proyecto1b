@@ -10,13 +10,14 @@ const DEPTH_HELD = 30;
 // la usa mediante dos callbacks:
 //   onHover(productId, x, y)    -> mientras se arrastra (para resaltar al cliente bajo el puntero)
 //   onRelease(productId, x, y)  -> al soltar; devuelve true si la comida fue aceptada. Si no, la comida cae.
+// Solo se atiende ARRASTRANDO: la comida tiene que salir de su bandeja. Un clic, o soltarla sin sacarla de la
+// bandeja, no entrega nada: la comida vuelve a su sitio sin consecuencias.
 export class ServingTrays {
-  constructor(scene, { onHover = () => {}, onRelease = () => false, onDrop = () => {}, onSelect = () => {} } = {}) {
+  constructor(scene, { onHover = () => {}, onRelease = () => false, onDrop = () => {} } = {}) {
     this.scene = scene;
     this.onHover = onHover;
     this.onRelease = onRelease;
     this.onDrop = onDrop;
-    this.onSelect = onSelect;
     this.visible = false;
     this.held = null; // { productId, sprite, pointerId, slot }
     this.slots = PRODUCT_IDS.map((id) => this.createSlot(id));
@@ -91,35 +92,38 @@ export class ServingTrays {
     const size = slot.height * 0.82;
     const sprite = foodIcon(this.scene, slot.id, pointer.x, pointer.y)
       .setDisplaySize(size, size).setTint(MENU_ACTIVE).setDepth(DEPTH_HELD).setAngle(-6);
-    this.held = { productId: slot.id, sprite, pointerId: pointer.id, startX: pointer.x, startY: pointer.y, moved: false, slot };
+    this.held = { productId: slot.id, sprite, pointerId: pointer.id, slot };
     this.paintSlot(slot);
     slot.icon.setAlpha(0.3); // la bandeja queda "vacía" mientras la comida está en la mano
   }
 
   handleMove(pointer) {
     if (!this.held || pointer.id !== this.held.pointerId) return;
-    const held = this.held;
-    held.moved ||= Math.hypot(pointer.x - held.startX, pointer.y - held.startY) > 8;
-    held.sprite.setPosition(pointer.x, pointer.y);
+    this.held.sprite.setPosition(pointer.x, pointer.y);
     this.onHover(this.held.productId, pointer.x, pointer.y);
   }
 
   handleUp(pointer) {
     if (!this.held || pointer.id !== this.held.pointerId) return;
-    const { productId, sprite, slot, moved, startX, startY } = this.held;
+    const { productId, sprite, slot } = this.held;
     this.held = null;
     slot.icon.setAlpha(1);
     this.paintSlot(slot);
     this.onHover(null, -1, -1); // quita cualquier resaltado
-    if (!moved && Math.hypot(pointer.x - startX, pointer.y - startY) <= 8) {
+    // Un clic (o soltar sin salir de la bandeja) no atiende: la comida simplemente vuelve a su bandeja.
+    if (this.slotContains(slot, pointer.x, pointer.y)) {
       sprite.destroy();
-      this.onSelect(productId);
       return;
     }
     // Si la comida cae, el último punto conocido es el del puntero al soltar.
     sprite.setPosition(pointer.x, pointer.y);
     if (this.onRelease(productId, pointer.x, pointer.y)) sprite.destroy();
     else this.fall(sprite, productId);
+  }
+
+  // ¿El punto (x, y) está sobre la bandeja `slot`?
+  slotContains(slot, x, y) {
+    return Math.abs(x - slot.zone.x) <= slot.size / 2 && Math.abs(y - slot.zone.y) <= slot.height / 2;
   }
 
   // Soltar fuera de un cliente (o cambiar de vista a mitad de arrastre): la comida cae al suelo.
