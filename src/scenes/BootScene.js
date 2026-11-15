@@ -15,6 +15,7 @@ export class BootScene extends Phaser.Scene {
     for (const camera of CAMERAS) this.load.image(camera.key + '-wendigo', 'assets/images/' + camera.key + '-wendigo.png');
     this.load.image('office-wendigo-dark', 'assets/images/office-wendigo-dark.png');
     this.load.image('office-wendigo-light', 'assets/images/office-wendigo-light.png');
+    this.load.image('wendigo-jumpscare', 'assets/images/wendigo-jumpscare.png');
     this.load.image('fan-rotor', 'assets/images/fan-rotor.png');
     preloadKitchenAssets(this);
     this.load.audio('door-bang', 'assets/audio/door-bang.ogg');

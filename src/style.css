@@ -1297,6 +1297,10 @@ kbd {
   filter: brightness(.2) saturate(.25);
 }
 
+.result-mode.wendigo-strike #game {
+  filter: brightness(1.18) saturate(.95);
+}
+
 .result-card {
   width: min(620px, 100%);
   text-align: center;

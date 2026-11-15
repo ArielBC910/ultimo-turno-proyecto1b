@@ -16,10 +16,12 @@ export class ResultScene extends Phaser.Scene {
       doll: 'La Muñeca de Trapo cruzó el mostrador.',
     }[cause];
     const won = result === 'won';
+    const wendigoAttack = result === 'lost' && !cause;
     const root = document.querySelector('#surveillance');
     const panel = document.querySelector('#result-screen');
     root.className = 'result-mode' + (won ? ' victory-mode' : ' defeat-mode');
-    panel.hidden = false;
+    if (wendigoAttack) root.classList.add('wendigo-strike');
+    panel.hidden = wendigoAttack;
     document.querySelector('#camera-view').hidden = true;
     document.querySelector('#result-eyebrow').textContent = won ? 'TURNO COMPLETADO' : 'SEÑAL PERDIDA';
     document.querySelector('#result-title').textContent = won ? '6:00 AM' : 'NO LLEGASTE AL AMANECER';
@@ -39,6 +41,33 @@ export class ResultScene extends Phaser.Scene {
     this.scale.on('resize', fit);
     const audio = this.registry.get('audio');
     if (!won && !attack) audio.defeat();
+    if (wendigoAttack) {
+      const strike = this.add.image(0, 0, 'wendigo-jumpscare');
+      const motion = { progress: 0 };
+      const placeStrike = () => {
+        const { width, height } = this.scale;
+        const p = motion.progress;
+        const cover = Math.max(width / strike.width, height / strike.height);
+        strike.setPosition(width * (0.33 + 0.17 * p), height * (0.43 + 0.07 * p))
+          .setScale(cover * (0.34 + 0.72 * p)).setAlpha(Math.min(1, p * 3));
+      };
+      placeStrike();
+      this.scale.on('resize', placeStrike);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        motion.progress = 1;
+        placeStrike();
+      } else {
+        this.tweens.add({ targets: motion, progress: 1, duration: 330, ease: 'Cubic.In',
+          onUpdate: placeStrike,
+          onComplete: () => this.cameras.main.shake(150, 0.009) });
+      }
+      this.time.delayedCall(950, () => {
+        root.classList.remove('wendigo-strike');
+        panel.hidden = false;
+        document.querySelector('#retry-button').focus({ preventScroll: true });
+      });
+      this.events.once('shutdown', () => this.scale.off('resize', placeStrike));
+    }
     const abort = new AbortController();
     let leaving = false;
     const go = (scene) => {
@@ -51,8 +80,9 @@ export class ResultScene extends Phaser.Scene {
     };
     document.querySelector('#retry-button').addEventListener('click', () => go('Office'), { signal: abort.signal });
     document.querySelector('#result-menu-button').addEventListener('click', () => go('Menu'), { signal: abort.signal });
-    document.querySelector('#retry-button').focus({ preventScroll: true });
+    if (!wendigoAttack) document.querySelector('#retry-button').focus({ preventScroll: true });
     this.events.once('shutdown', () => {
+      root.classList.remove('wendigo-strike');
       abort.abort();
       panel.hidden = true;
       this.scale.off('resize', fit);
