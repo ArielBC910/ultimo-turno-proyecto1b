@@ -1,10 +1,12 @@
 import { CAMERAS } from '../config.js';
 import { BACK_OPENS_MONITOR, FACING } from '../kitchen/kitchenConfig.js';
 
-// Estado exclusivamente visual. No contiene IA, noche, energía ni progresión.
+// Los controles comparten el permiso eléctrico; la simulación calcula el consumo.
 export class SurveillanceManager {
   constructor({ roomMode = false } = {}) {
     this.roomMode = roomMode;
+    this.powerAvailable = true;
+    this.controlsLocked = false;
     this.walking = roomMode;
     this.station = null;
     this.monitorOpen = false;
@@ -30,16 +32,19 @@ export class SurveillanceManager {
   }
 
   toggleLight() {
-    if (this.roomMode) { if (this.station === 'door') this.lightOn = !this.lightOn; return; }
+    if (!this.powerAvailable || this.controlsLocked) return;
+    if (this.roomMode) { if (!this.monitorOpen) this.lightOn = !this.lightOn; return; }
     if (!this.inKitchen && !this.monitorOpen) this.lightOn = !this.lightOn;
   }
 
   toggleDoor() {
+    if (!this.powerAvailable || this.controlsLocked) return;
     if (this.roomMode) { if (this.station === 'door') this.doorClosed = !this.doorClosed; return; }
     if (!this.inKitchen && !this.monitorOpen) this.doorClosed = !this.doorClosed;
   }
 
   toggleMonitor() {
+    if (!this.powerAvailable || this.controlsLocked) return;
     if (this.roomMode) { this.monitorOpen = !this.monitorOpen; return; }
     if (this.inKitchen) return; // El monitor está a la espalda: primero hay que darse la vuelta.
     this.monitorOpen = !this.monitorOpen;
@@ -47,6 +52,7 @@ export class SurveillanceManager {
   }
 
   selectCamera(key) {
+    if (!this.powerAvailable || this.controlsLocked) return;
     if ((this.roomMode || !this.inKitchen) && this.monitorOpen && CAMERAS.some((camera) => camera.key === key)) this.camera = key;
   }
 }

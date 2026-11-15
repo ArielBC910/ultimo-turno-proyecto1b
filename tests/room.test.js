@@ -67,11 +67,12 @@ test('monitor portátil disponible en cocina y caminando, sin girar ni apagar la
   state.toggleLight(); state.toggleDoor();
   assert.equal(state.lightOn,false);
   assert.equal(state.doorClosed,false);
+  state.toggleMonitor(); // Cierra el monitor antes de accionar la linterna.
   state.station='door';
   state.toggleLight(); state.toggleDoor();
   assert.equal(state.lightOn,true);
   assert.equal(state.doorClosed,true);
   state.toggleMonitor();
-  assert.equal(state.monitorOpen,false);
-  assert.equal(state.lightOn,true);
+  assert.equal(state.monitorOpen,true);
+  assert.equal(state.lightOn,true); // Consumo simultáneo: la luz no se apaga al abrir cámaras.
 });

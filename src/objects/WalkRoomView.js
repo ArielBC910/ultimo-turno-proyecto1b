@@ -1,9 +1,11 @@
+import { FlashlightRig } from '../room/FlashlightRig.js';
 import * as THREE from 'three';
 import { RoomNavigation, ROOM } from '../room/navigation.js';
 import { getSurveillanceTexture, getMonsterPose, CAMERAS } from '../config.js';
-import { FACING } from '../kitchen/kitchenConfig.js';
+import { CharacterActor } from '../room/CharacterActor.js';
+import { Atmosphere } from '../room/Atmosphere.js';
+import { FACING, CUSTOMER_PATIENCE_MS } from '../kitchen/kitchenConfig.js';
 import { orderEmojis, PRODUCTS, PRODUCT_IDS } from '../kitchen/orders.js';
-import { DoorMotion } from '../room/DoorMotion.js';
 import { RestaurantDetails } from '../room/RestaurantDetails.js';
 
 // La sala y sus muebles son mallas 3D. Las cámaras conservan sus fotografías de vigilancia.
@@ -11,8 +13,12 @@ export class WalkRoomView {
   constructor(scene) {
     this.scene = scene;
     this.nav = new RoomNavigation();
-    this.doorMotion = new DoorMotion();
+    this.doorMotion = scene.shift.door;
     this.keys = new Set();
+    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.visualTime = 0;
+    this.lookTarget = new THREE.Vector3();
+    this.raycaster = new THREE.Raycaster();
     this.abort = new AbortController();
     this.textures = new Set();
     this.customerMeshes = new Map();
@@ -22,17 +28,20 @@ export class WalkRoomView {
     this.world.fog = new THREE.Fog('#0e100e', 7, 16);
     this.camera = new THREE.PerspectiveCamera(59, 1, .05, 24);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = .95;
+    this.renderer.toneMappingExposure = .72;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.host = document.createElement('div'); this.host.id = 'room-world';
     this.host.append(this.renderer.domElement);
     document.querySelector('#surveillance').append(this.host);
     this.build();
+    this.world.add(this.camera);
+    this.hand=new FlashlightRig();this.camera.add(this.hand);
     this.details = new RestaurantDetails(this);
+    this.atmosphere = new Atmosphere(this);
     this.buildHUD();
     this.bindInput();
     this.fit();
@@ -40,7 +49,7 @@ export class WalkRoomView {
 
   texture(source) {
     const t = new THREE.Texture(source); t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = this.renderer.capabilities.getMaxAnisotropy(); t.needsUpdate = true;
+    t.anisotropy = Math.min(8,this.renderer.capabilities.getMaxAnisotropy()); t.needsUpdate = true;
     this.textures.add(t); return t;
   }
 
@@ -55,7 +64,7 @@ export class WalkRoomView {
   wallTexture() {
     const t=this.loadTexture('room-wall-photo.png');
     t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;
-    t.repeat.set(2,1.5);t.anisotropy=this.renderer.capabilities.getMaxAnisotropy();this.textures.add(t);return t;
+    t.repeat.set(2,1.5);t.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());this.textures.add(t);return t;
   }
 
   label(text,w=.85,h=.17) {
@@ -78,7 +87,7 @@ export class WalkRoomView {
     const red=new THREE.MeshStandardMaterial({color:'#49312a',roughness:.7});
     const floorMap=this.loadTexture('room-floor-ceramic.png');
     floorMap.colorSpace=THREE.SRGBColorSpace; floorMap.wrapS=floorMap.wrapT=THREE.RepeatWrapping;
-    floorMap.repeat.set(3.4,3.6); floorMap.anisotropy=this.renderer.capabilities.getMaxAnisotropy(); this.textures.add(floorMap);
+    floorMap.repeat.set(3.4,3.6); floorMap.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy()); this.textures.add(floorMap);
     const floorMat=new THREE.MeshStandardMaterial({ map:floorMap, roughness:.43, metalness:.08 });
     this.box(3.4,.12,3.6,0,-.06,0,floorMat);
     this.box(3.4,.12,3.6,0,2.71,0,new THREE.MeshStandardMaterial({color:'#666b5f',roughness:.96}));
@@ -109,8 +118,8 @@ export class WalkRoomView {
     this.box(1.85,2.65,.1,0,1.325,-6.05,dark);
     const monsterMap=this.loadTexture('hambriento-room-cutout.png');
     monsterMap.colorSpace=THREE.SRGBColorSpace; this.textures.add(monsterMap);
-    this.creature=new THREE.Mesh(new THREE.PlaneGeometry(1.28,2.4),new THREE.MeshBasicMaterial({map:monsterMap,transparent:true,depthWrite:false,color:'#69716b',alphaTest:.025}));
-    this.creature.position.set(0,1.2,-3.1); this.world.add(this.creature);
+    this.creature=new CharacterActor(monsterMap,{monster:true});
+    this.creature.position.set(0,0,-3.1); this.world.add(this.creature);
     // Fondo: cocina y ventana de atención en el lado opuesto al acceso.
     for(const side of [-1,1]) this.box(.62,2.65,.15,side*1.39,1.325,1.87,this.wallMaterial);
     this.box(2.16,.85,.15,0,.425,1.87,this.wallMaterial);
@@ -143,15 +152,15 @@ export class WalkRoomView {
     for(const [y,color] of [[1.5,'#9eb582'],[1.3,'#9f3d27']]) this.box(.1,.1,.03,.99,y,-1.64,new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.25}));
     const fixture=new THREE.MeshStandardMaterial({color:'#e4dfb7',emissive:'#d6d0ab',emissiveIntensity:1.5});
     this.box(.8,.055,.19,0,2.57,0,fixture);
-    const light=new THREE.PointLight('#ffcf8e',6.5,8,2); light.position.set(.3,2.35,-.4); light.castShadow=true; light.shadow.mapSize.set(2048,2048); light.shadow.bias=-.0006; this.world.add(light);
-    const kitchenLight=new THREE.PointLight('#8ab4bb',5,7,2); kitchenLight.position.set(0,2,2.6); this.world.add(kitchenLight);
-    this.world.add(new THREE.HemisphereLight('#d2bda0','#30251e',.45));
-    this.flashlight=new THREE.SpotLight('#fff1c9',0,9,.42,.6,1.5); this.flashlight.position.set(0,1.5,-1.2); this.flashlight.target.position.set(0,1.1,-4); this.world.add(this.flashlight,this.flashlight.target);
+    const light=new THREE.PointLight('#ffcf8e',3.4,8,2); this.keyLight=light; light.position.set(.3,2.35,-.4); light.castShadow=true; light.shadow.mapSize.set(512,512); light.shadow.camera.near=.1; light.shadow.camera.far=8; light.shadow.normalBias=.025; light.shadow.bias=-.0006; this.world.add(light);
+    const kitchenLight=new THREE.PointLight('#8ab4bb',1.3,7,2); kitchenLight.position.set(0,2,2.6); this.world.add(kitchenLight);
+    this.world.add(new THREE.HemisphereLight('#a6b5ae','#241b16',.09));
+    this.flashlight=new THREE.SpotLight('#fff1c9',0,9,.42,.6,1.5); this.flashlight.position.set(0,1.5,-1.2); this.flashlight.target.position.set(0,1.1,-4); this.flashlight.castShadow=true; this.flashlight.shadow.mapSize.set(1024,1024); this.flashlight.shadow.normalBias=.015; this.world.add(this.flashlight,this.flashlight.target);
   }
 
   buildHUD() {
     this.hud=document.createElement('section'); this.hud.className='walk-hud room-hud';
-    this.hud.innerHTML='<div class="walk-title">SALA DE SEGURIDAD<small>ACCESO AL FRENTE · COCINA DETRÁS</small></div><span class="walk-reticle" aria-hidden="true">+</span><p class="room-context" role="status"></p><div class="room-actions"><button data-action="monitor">C · CÁMARAS</button><button data-action="door">X · PUERTA</button><button data-action="light">F · ALUMBRAR</button><button data-action="turn">V · DARSE LA VUELTA</button></div><p class="walk-help">WASD · CAMINAR <span>RATÓN · MIRAR SIN CLIC</span> ACÉRCATE PARA USAR LA PUERTA O LA COCINA</p><div class="walk-touch"><button data-walk="KeyW">▲</button><button data-walk="KeyA">◀</button><button data-walk="KeyS">▼</button><button data-walk="KeyD">▶</button><button data-walk="ArrowLeft">↶</button><button data-walk="ArrowRight">↷</button></div><div class="room-orders" hidden></div>';
+    this.hud.innerHTML='<div class="walk-title">SALA DE SEGURIDAD<small>ACCESO AL FRENTE · COCINA DETRÁS</small></div><span class="walk-reticle" aria-hidden="true">+</span><p class="room-context" role="status"></p><div class="room-actions"><button data-action="monitor">C · CÁMARAS</button><button data-action="door">X · PUERTA</button><button data-action="light">F · ALUMBRAR</button><button data-action="turn">V · DARSE LA VUELTA</button></div><p class="walk-help">WASD · CAMINAR <span>CLIC · CAPTURAR / ARRASTRA · MIRAR / ESC · LIBERAR</span> ACÉRCATE PARA USAR LA PUERTA O LA COCINA</p><div class="walk-touch"><button data-walk="KeyW">▲</button><button data-walk="KeyA">◀</button><button data-walk="KeyS">▼</button><button data-walk="KeyD">▶</button><button data-walk="ArrowLeft">↶</button><button data-walk="ArrowRight">↷</button></div><div class="room-orders" hidden></div>';
     this.monitor=document.createElement('section'); this.monitor.className='portable-monitor'; this.monitor.hidden=true;
     this.monitor.setAttribute('aria-label','Monitor portátil de cámaras');
     this.monitor.innerHTML='<header><span class="portable-name"></span><button class="portable-close" aria-label="Cerrar cámaras">✕</button></header><div class="portable-feed"><canvas width="640" height="360"></canvas><span class="portable-lost" role="status" hidden>SEÑAL PERDIDA<br>RESTABLECIENDO CONEXIÓN</span></div><nav>'+CAMERAS.map(c=>`<button data-feed="${c.key}">${c.number} · ${c.name}</button>`).join('')+'</nav>';
@@ -196,8 +205,9 @@ export class WalkRoomView {
     this.monitor.querySelector('.portable-close').addEventListener('click',()=>this.scene.ui.toggleMonitor(),options);
     for(const button of this.monitor.querySelectorAll('[data-feed]')) button.addEventListener('click',()=>{this.scene.state.selectCamera(button.dataset.feed);this.scene.ui.sync();},options);
     window.addEventListener('keydown',event=>{
-      if(!this.active||event.ctrlKey||event.altKey||event.metaKey||/INPUT|TEXTAREA/.test(event.target.tagName))return;
+      if(this.scene.finished||!this.active||event.ctrlKey||event.altKey||event.metaKey||/INPUT|TEXTAREA/.test(event.target.tagName))return;
       if(['KeyW','KeyA','KeyS','KeyD','ArrowLeft','ArrowRight'].includes(event.code)){this.keys.add(event.code);event.preventDefault();}
+      if(!event.repeat && event.code==='KeyE' && this.scene.state.station!=='kitchen'){this.interact();}
       if(!event.repeat&&this.scene.state.station==='kitchen'){
         const product={KeyB:'burger',KeyH:'hotdog',KeyP:'fries',KeyR:'drink'}[event.code];
         if(product){event.preventDefault();this.prepare(product);}
@@ -209,12 +219,12 @@ export class WalkRoomView {
     window.addEventListener('blur',()=>{this.keys.clear();this.dragging=false;this.pointerX=null;this.releaseMouseLock();},options);
     const canvas=this.renderer.domElement;
     canvas.addEventListener('pointerdown',event=>{
-      if(!this.active||event.button!==0)return;
-      this.dragging=event.pointerType==='touch';this.pointerX=event.clientX;this.pointerY=event.clientY;this.pointerStart={x:event.clientX,y:event.clientY};
+      if(this.scene.finished||!this.active||event.button!==0)return;
+      this.dragging=true;this.pointerX=event.clientX;this.pointerY=event.clientY;this.pointerStart={x:event.clientX,y:event.clientY};
       if(this.dragging)canvas.setPointerCapture(event.pointerId);
     },options);
     canvas.addEventListener('pointerup',event=>{
-      if(!this.active||event.button!==0)return;
+      if(this.scene.finished||!this.active||event.button!==0)return;
       if(!this.pointerStart||Math.hypot(event.clientX-this.pointerStart.x,event.clientY-this.pointerStart.y)>5)return;
       const rect=canvas.getBoundingClientRect();const ray=new THREE.Raycaster();
       const locked=document.pointerLockElement===canvas;
@@ -225,9 +235,9 @@ export class WalkRoomView {
       else if(hit.object.userData.action==='door')this.scene.ui.perform('toggleDoor');
       else if(PRODUCT_IDS.includes(hit.object.userData.action))this.prepare(hit.object.userData.action);
     },options);
-    // El ratón mira al pasar por la escena, sin mantener ningún botón pulsado.
+    // Si el navegador rechaza Pointer Lock, el arrastre mantiene la mirada operativa.
     canvas.addEventListener('pointermove',event=>{
-      if(!this.active||document.pointerLockElement===canvas||(event.pointerType==='touch'&&!this.dragging))return;
+      if(!this.active||document.pointerLockElement===canvas||!this.dragging)return;
       if(this.pointerX!=null)this.look(event.clientX-this.pointerX,event.clientY-this.pointerY);
       this.pointerX=event.clientX;this.pointerY=event.clientY;
     },options);
@@ -243,11 +253,20 @@ export class WalkRoomView {
     }
   }
 
-  turnAround(){this.nav.turnAround();this.pitch=0;this.syncStation();}
-  look(dx,dy){this.nav.angle+=dx*.004;this.pitch=THREE.MathUtils.clamp((this.pitch??0)-dy*.0025,-.65,.65);}
+  turnAround(){if(this.reducedMotion){this.nav.turnAround();this.pitch=0;this.syncStation();}else{this.turnRemaining=Math.PI;}}
+  interact(){
+    this.raycaster.setFromCamera(new THREE.Vector2(0,0),this.camera);
+    const hit=this.raycaster.intersectObjects(this.details.actions)[0];
+    if(!hit||hit.distance>2.5)return;
+    const action=hit.object.userData.action;
+    if(action==='monitor')this.scene.ui.toggleMonitor();
+    else if(action==='door')this.scene.ui.perform('toggleDoor');
+    else if(PRODUCT_IDS.includes(action))this.prepare(action);
+  }
+  look(dx,dy){if(this.scene.finished)return;this.nav.angle+=dx*.004;this.pitch=THREE.MathUtils.clamp((this.pitch??0)-dy*.0025,-.65,.65);}
   requestMouseLock(){
     const canvas=this.renderer.domElement;if(document.pointerLockElement===canvas)return;
-    try{canvas.requestPointerLock?.()?.catch?.(()=>{});}catch{/* Mirar sin captura sigue disponible. */}
+    try{canvas.requestPointerLock?.()?.catch?.(()=>{});}catch{/* El arrastre funciona incluso si Pointer Lock no está disponible. */}
   }
   releaseMouseLock(){if(document.pointerLockElement===this.renderer.domElement)document.exitPointerLock();}
   prepare(id){if(this.scene.kitchen.prepare(id))this.feedback('PREPARANDO '+PRODUCTS[id].label.toUpperCase());else this.feedback('BANDEJA LLENA O FUERA DE LA COCINA');}
@@ -267,41 +286,54 @@ export class WalkRoomView {
   syncStation(){
     const state=this.scene.state, station=this.nav.station()?.view??null;
     const facing=Math.sin(this.nav.angle)>.2?FACING.KITCHEN:FACING.BACK;
-    if(state.station!==station||state.facing!==facing){state.station=station;state.facing=facing;if(station!=='door')state.lightOn=false;if(station==='kitchen')this.releaseMouseLock();this.scene.ui.sync();}
+    if(state.station!==station||state.facing!==facing){state.station=station;state.facing=facing;if(station==='kitchen')this.releaseMouseLock();this.scene.ui.sync();}
   }
 
   update(delta){
-    this.doorMotion.update(delta,this.scene.state.doorClosed);
     if(!this.active)return;
     const k=code=>Number(this.keys.has(code));
     this.nav.move(k('KeyW')-k('KeyS'),k('KeyD')-k('KeyA'),k('ArrowRight')-k('ArrowLeft'),delta);
+    if(this.turnRemaining>0){const step=Math.min(this.turnRemaining,Math.max(0,delta)*.009);this.nav.angle+=step;this.turnRemaining-=step;}
     this.syncStation();
+    this.visualTime+=Math.min(delta,80)/1000;
     const state=this.scene.state;
-    this.camera.position.set(this.nav.x,1.55,this.nav.y);
+    const bob=this.reducedMotion?0:Math.sin(this.visualTime*9)*.009*Math.min(1,Math.abs(k('KeyW')-k('KeyS'))+Math.abs(k('KeyA')-k('KeyD')));
+    this.camera.position.set(this.nav.x,1.55+bob,this.nav.y);
     this.camera.lookAt(this.nav.x+Math.cos(this.nav.angle),1.55+Math.tan(this.pitch??0),this.nav.y+Math.sin(this.nav.angle));
     this.doorGroup.position.y=(1-this.doorMotion.closed)*2.6;
     this.creature.visible=this.scene.monster.location==='door';
-    this.creature.material.color.set(state.lightOn?'#b1b2a1':'#353d35');
-    this.flashlight.intensity=state.lightOn?32:0;
-    this.context.textContent=state.station==='door'?'ACCESO · X PARA LA PUERTA / F PARA ALUMBRAR':state.station==='kitchen'?'COCINA · VENTANA DE ATENCIÓN ACTIVA':'PUERTA AL FRENTE · COCINA DETRÁS · CÁMARAS DISPONIBLES CON C';
-    for(const action of ['door','light'])this.hud.querySelector(`[data-action="${action}"]`).disabled=state.station!=='door';
+    this.creature.position.z=-3.7+Math.min(1,this.scene.monster.openExposure/15000)*1.5;
+    this.creature.animate(this.visualTime,0,this.scene.monster.openExposure/15000,this.reducedMotion);
+    this.flashlight.position.copy(this.camera.position);
+    this.camera.getWorldDirection(this.lookTarget);
+    this.flashlight.target.position.copy(this.camera.position).addScaledVector(this.lookTarget,5);
+    this.atmosphere.update(delta,this.visualTime);
+    this.flashlight.intensity=state.lightOn?38:0;
+    this.hand.update(delta,state.lightOn,this.visualTime,this.reducedMotion);
+    this.context.textContent=!state.powerAvailable?'SIN ENERGÍA · PUEDES CAMINAR, MIRAR Y ATENDER PEDIDOS':state.station==='door'?'ACCESO · X PARA LA PUERTA / F PARA ALUMBRAR':state.station==='kitchen'?'COCINA · VENTANA DE ATENCIÓN ACTIVA':'E · INTERACTUAR / ENTREGAR · F · LINTERNA · C · CÁMARAS';
+    this.hud.querySelector('[data-action="door"]').disabled=!state.powerAvailable||state.controlsLocked||state.station!=='door';
+    this.hud.querySelector('[data-action="light"]').disabled=!state.powerAvailable||state.controlsLocked;
+    this.hud.querySelector('[data-action="monitor"]').disabled=!state.powerAvailable||state.controlsLocked;
     this.hud.querySelector('[data-action="monitor"]').textContent=state.monitorOpen?'C · CERRAR CÁMARAS':'C · CÁMARAS';
     this.hud.querySelector('[data-action="door"]').textContent=state.doorClosed?'X · ABRIR PUERTA':'X · CERRAR PUERTA';
+    this.hud.querySelector('[data-action="light"]').textContent=state.lightOn?'F · APAGAR LUZ':'F · LINTERNA';
     this.hud.querySelector('[data-action="light"]').setAttribute('aria-pressed',String(state.lightOn));
-    this.syncCustomers();this.details.update();
+    this.syncCustomers();this.details.update(delta);
+    this.scene.registry.get('audio').setRoomPose?.(this.nav.x,this.nav.y,this.nav.angle);
     this.renderer.render(this.world,this.camera);
   }
 
   syncCustomers(){
     const customers=this.scene.kitchen.getCustomers();
-    for(const [customer,mesh] of this.customerMeshes)if(!customers.includes(customer)){this.world.remove(mesh);mesh.geometry.dispose();mesh.material.dispose();this.customerMeshes.delete(customer);}
+    for(const [customer,mesh] of this.customerMeshes)if(!customers.includes(customer)){this.world.remove(mesh);mesh.dispose();this.customerMeshes.delete(customer);}
     for(const customer of customers){
       let mesh=this.customerMeshes.get(customer);
       if(!mesh){
         if(!this.customerTextures.has(customer.key))this.customerTextures.set(customer.key,this.texture(this.scene.textures.get(customer.key).getSourceImage()));
-        mesh=new THREE.Mesh(new THREE.PlaneGeometry(.64,1.6),new THREE.MeshStandardMaterial({map:this.customerTextures.get(customer.key),transparent:true,alphaTest:.05,side:THREE.DoubleSide,roughness:1}));mesh.rotation.y=Math.PI;this.world.add(mesh);this.customerMeshes.set(customer,mesh);
+        mesh=new CharacterActor(this.customerTextures.get(customer.key));mesh.rotation.y=Math.PI;this.world.add(mesh);this.customerMeshes.set(customer,mesh);
       }
-      mesh.position.set((customer.xr-.5)*2.2,1.05,3.9-customer.p*1.65);
+      mesh.position.set((customer.xr-.5)*2.2,.15,3.9-customer.p*1.65);
+      mesh.animate(this.visualTime+customer.id,1-customer.p,customer.wait?.getValue()??0,this.reducedMotion);
       mesh.visible=true;
     }
     this.orders.hidden=this.scene.state.station!=='kitchen';
@@ -310,17 +342,19 @@ export class WalkRoomView {
     const list=this.orders.querySelector('.customer-orders');
     if(this.orderKey!==orderKey){
       this.orderKey=orderKey;
-      list.innerHTML=customers.length?customers.map(c=>`<div class="customer-order" data-order-card="${c.id}"><span>CLIENTE ${c.lane+1} · ${orderEmojis(c.order).join(' ')}<small></small></span><button data-serve="${c.id}">ENTREGAR</button></div>`).join(''):'<p>ESPERANDO CLIENTES</p>';
+      list.innerHTML=customers.length?customers.map(c=>`<div class="customer-order" data-order-card="${c.id}"><span><b>CLIENTE ${c.lane+1}</b><strong class="order-items">${PRODUCT_IDS.filter(id=>c.order.items.includes(id)).map(id=>`${PRODUCTS[id].emoji} ${c.order.items.filter(item=>item===id).length} × ${PRODUCTS[id].label}`).join('<br>')}</strong><small></small><progress class="patience-bar" max="1" value="1" aria-label="Paciencia del cliente"></progress></span><button data-serve="${c.id}">ENTREGAR</button></div>`).join(''):'<p>ESPERANDO CLIENTES</p>';
     }
     for(const c of customers){
       const card=list.querySelector(`[data-order-card="${c.id}"]`);
-      card.querySelector('small').textContent=c.wait?Math.ceil(20*(1-c.wait.getValue()))+' s':'ACERCÁNDOSE';
+      card.querySelector('small').textContent=c.wait?Math.ceil(CUSTOMER_PATIENCE_MS/1000*(1-c.wait.getValue()))+' s':'ACERCÁNDOSE';
       card.querySelector('button').disabled=!c.wait;
+      card.querySelector('progress').value=c.wait?1-c.wait.getValue():1;
+      card.classList.toggle('order-urgent',Boolean(c.wait&&c.wait.getValue()>.75));
     }
     this.orders.querySelector('.served-count').textContent=cooking.served+' ENTREGADOS';
     this.orders.querySelector('.prep-status').textContent=cooking.queue.length?'PREPARANDO '+PRODUCTS[cooking.queue[0]].label.toUpperCase()+' · COLA '+cooking.queue.length:'LISTO PARA PREPARAR';
     this.orders.querySelector('.prep-track div').style.width=cooking.progress*100+'%';
-    this.orders.querySelector('.food-tray span').textContent='BANDEJA: '+(cooking.tray.map(id=>PRODUCTS[id].emoji).join(' ')||'VACÍA');
+    this.orders.querySelector('.food-tray span').textContent='BANDEJA: '+(cooking.tray.map(id=>PRODUCTS[id].label).join(' · ')||'VACÍA');
     for(const button of this.orders.querySelectorAll('[data-product]'))button.disabled=cooking.queue.length+cooking.tray.length>=3;
     this.orders.querySelector('.kitchen-feedback').textContent=performance.now()<this.feedbackUntil?this.feedbackText:'';
   }
@@ -341,7 +375,7 @@ export class WalkRoomView {
     this.releaseMouseLock();
     this.details.destroy();
     this.abort.abort();this.hud.remove();this.monitor.remove();this.host.remove();
-    this.world.traverse(object=>{object.geometry?.dispose();if(object.material){for(const m of Array.isArray(object.material)?object.material:[object.material])m.dispose();}});
+    this.world.traverse(object=>{object.geometry?.dispose();object.customDepthMaterial?.dispose();if(object.material){for(const m of Array.isArray(object.material)?object.material:[object.material])m.dispose();}});
     for(const texture of this.textures)texture.dispose();this.renderer.dispose();this.renderer.forceContextLoss();
   }
 }

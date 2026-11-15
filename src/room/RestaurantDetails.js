@@ -10,7 +10,7 @@ export class RestaurantDetails {
     const pmrem=new THREE.PMREMGenerator(room.renderer);
     const environment=new RoomEnvironment();
     this.environment=pmrem.fromScene(environment,.05);this.world.environment=this.environment.texture;
-    this.world.environmentIntensity=.27;environment.dispose();pmrem.dispose();
+    this.world.environmentIntensity=.07;environment.dispose();pmrem.dispose();
     // Escritorio y utilería en las mismas posiciones que office.png.
     box(3.15,.09,.53,0,.88,-1.32,wood);
     for(const x of [-1.4,1.4])box(.12,.84,.43,x,.42,-1.32,wood);
@@ -25,15 +25,42 @@ export class RestaurantDetails {
     }
     for(const z of [-1.43,-1.7])for(const y of [1.78,1.84,2.04])box(.48,.008,.008,-1.37,y,z,dark);
     for(let i=0;i<6;i++)for(const z of [-1.43,-1.7])box(.006,.28,.006,-1.59+i*.085,1.91,z,dark);
-    const crt=this.filePlane('prop-crt-photo.png',.66,.55,-.96,1.185,-1.1);
-    crt.userData.action='monitor';this.actions.push(crt);
-    box(.5,.43,.24,-.96,1.14,-1.26,new THREE.MeshStandardMaterial({map:this.load('room-steel-photo.png'),color:'#73634a',roughness:.85}));
-    this.filePlane('prop-fan-photo.png',.46,.65,1.04,1.245,-1.14);
+    // CRT volumétrico: carcasa, bisel, pantalla curva y mandos separados.
+    const casing=new THREE.MeshStandardMaterial({map:this.load('room-steel-photo.png'),color:'#81745e',roughness:.8});
+    box(.68,.52,.39,-.96,1.19,-1.27,casing);
+    box(.57,.41,.035,-1.0,1.2,-1.055,dark);
+    const screenGeometry=new THREE.SphereGeometry(1,32,20,Math.PI*.36,Math.PI*.28,Math.PI*.29,Math.PI*.42);
+    this.screenMap=room.texture(room.scene.textures.get('cam03').getSourceImage());
+    const screen=new THREE.Mesh(new THREE.PlaneGeometry(.47,.32,12,8),new THREE.MeshStandardMaterial({map:this.screenMap,emissiveMap:this.screenMap,emissive:'#9bab8c',emissiveIntensity:.55,roughness:.22}));
+    screenGeometry.dispose();
+    const vertices=screen.geometry.attributes.position;
+    for(let i=0;i<vertices.count;i++)vertices.setZ(i,.018*(1-(vertices.getX(i)/.25)**2-(vertices.getY(i)/.18)**2));
+    screen.geometry.computeVertexNormals();screen.position.set(-1.0,1.2,-1.029);this.world.add(screen);
+    screen.userData.action='monitor';this.actions.push(screen);
+    for(const y of [1.06,1.15]){const knob=this.cylinder(.023,.023,.026,-.67,y,-1.045,metal);knob.rotation.x=Math.PI/2;}
+    for(let i=0;i<7;i++)box(.035,.008,.012,-.67,1.24+i*.018,-1.064,dark);
+    box(.55,.045,.34,-.96,.945,-1.25,dark);
+    const crtGlow=new THREE.PointLight('#9abd9b',.35,1.3,2);crtGlow.position.set(-.96,1.2,-.92);this.world.add(crtGlow);
+    // Ventilador con jaula y rotor independientes; ninguna fotografía flotante.
+    this.cylinder(.14,.18,.035,1.04,.96,-1.2,metal);
+    this.cylinder(.025,.04,.27,1.04,1.11,-1.2,metal);
+    this.fanRotor=new THREE.Group();this.fanRotor.position.set(1.04,1.39,-1.14);this.world.add(this.fanRotor);
+    for(let i=0;i<3;i++){
+      const blade=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),metal);
+      blade.scale.set(.075,.17,.012);blade.position.set(Math.sin(i*Math.PI*2/3)*.1,Math.cos(i*Math.PI*2/3)*.1,0);blade.rotation.z=-i*Math.PI*2/3+.35;this.fanRotor.add(blade);
+    }
+    for(const r of [.07,.12,.17,.225]){
+      const cage=new THREE.Mesh(new THREE.TorusGeometry(r,.004,5,40),metal);cage.position.set(1.04,1.39,-1.105);this.world.add(cage);
+    }
+    for(let i=0;i<10;i++){
+      const spoke=box(.004,.45,.004,1.04,1.39,-1.10,metal);spoke.rotation.z=i*Math.PI/10;
+    }
+    const hub=this.cylinder(.035,.035,.08,1.04,1.39,-1.12,dark);hub.rotation.x=Math.PI/2;
     const lampMaterial=new THREE.MeshStandardMaterial({map:this.load('room-steel-photo.png'),color:'#9b7045',metalness:.7,roughness:.38,side:THREE.DoubleSide});
     const shade=new THREE.Mesh(new THREE.ConeGeometry(.24,.24,48,1,true),lampMaterial);
     shade.position.set(1.18,2.25,-1.25);this.world.add(shade);
     box(.025,.33,.025,1.18,2.49,-1.25,dark);
-    const task=new THREE.PointLight('#ffbd70',3,3.4,2);task.position.set(1.18,2.08,-1.22);this.world.add(task);
+    const task=new THREE.PointLight('#ffbd70',.5,3.4,2);task.position.set(1.18,2.08,-1.22);this.world.add(task);
     // Vaso, pajita, libreta y papeles sobre la madera.
     this.cylinder(.055,.043,.19,-.59,1.02,-1.17,new THREE.MeshStandardMaterial({color:'#c5ae82',roughness:.8}));
     this.cylinder(.057,.057,.013,-.59,1.12,-1.17,metal);
@@ -76,6 +103,27 @@ export class RestaurantDetails {
     }
     this.cylinder(.06,.06,.25,-1.2,1.1,1.62,metal);
     for(let i=0;i<7;i++)this.cylinder(.004,.004,.3,-1.23+(i%3)*.019,1.29,1.62+Math.floor(i/3)*.012,new THREE.MeshStandardMaterial({color:'#b53326'}));
+    // Portes d'équipement, charnières, poignées et grille de ventilation.
+    for(const y of [.57,1.52]){
+      box(.025,y<1?1.05:.65,.69,-1.105,y,.9,metal);
+      box(.04,.24,.035,-1.075,y,.61,dark);
+    }
+    for(let i=0;i<8;i++)box(.008,.008,.46,-1.071,.12+i*.021,.95,dark);
+    for(const z of [.1,.62,1.15]){
+      box(.035,.63,.46,1.102,.46,z,metal);
+      box(.055,.025,.19,1.072,.71,z,dark);
+    }
+    for(const z of [.05,.43]){
+      const pan=this.cylinder(.13,.1,.07,1.36,.99,z,dark);
+      box(.22,.025,.035,1.15,1.015,z,dark);
+      pan.receiveShadow=true;
+    }
+    for(let i=0;i<9;i++)box(.52,.015,.015,1.3,2.217,.9+i*.05,dark);
+    // Desagüe, grifo curvado y mandos metálicos.
+    const tap=new THREE.Mesh(new THREE.TorusGeometry(.1,.014,8,20,Math.PI),metal);
+    tap.position.set(1.5,1.15,.9);tap.rotation.y=Math.PI/2;this.world.add(tap);
+    this.cylinder(.025,.025,.022,1.39,.953,.9,metal);
+    for(const z of [.78,1.02])this.cylinder(.025,.025,.04,1.58,.98,z,metal);
     this.foodTray=new THREE.Group();this.world.add(this.foodTray);
     this.foodMaps=new Map();
     for(const [i,id] of ['burger','hotdog','fries','drink'].entries()){
@@ -110,7 +158,10 @@ export class RestaurantDetails {
     mesh.position.set(x,y,z);mesh.rotation.set(rx,ry,0);this.world.add(mesh);return mesh;
   }
   cylinder(rt,rb,h,x,y,z,m){const mesh=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,32),m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;this.world.add(mesh);return mesh;}
-  update(){
+  update(delta=16){
+    if(!this.room.reducedMotion)this.fanRotor.rotation.z-=Math.min(delta,80)*.014;
+    const state=this.room.scene.state;
+    if(this.screenKey!==state.camera){this.screenKey=state.camera;this.screenMap.image=this.room.scene.textures.get(state.camera).getSourceImage();this.screenMap.needsUpdate=true;}
     const ready=this.room.scene.kitchen.cooking.tray;
     if(this.trayKey===ready.join(','))return;this.trayKey=ready.join(',');
     for(const mesh of [...this.foodTray.children]){this.foodTray.remove(mesh);mesh.geometry.dispose();mesh.material.dispose();}

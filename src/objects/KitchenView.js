@@ -4,7 +4,7 @@ import { createOrder, orderEmojis } from '../kitchen/orders.js';
 import { formatWait, isWaitWarning } from '../kitchen/patience.js';
 import { CookingStation } from '../kitchen/CookingStation.js';
 import {
-  CUSTOMER_KEYS, CUSTOMER_PATIENCE_MS, KITCHEN_EVENTS, MAX_CUSTOMERS_AT_WINDOW, STALL_KEY, WINDOW_RECT,
+  CUSTOMER_KEYS, CUSTOMER_PATIENCE_MS, CUSTOMER_FIRST_ARRIVAL_MS, CUSTOMER_INTERVAL_MS, KITCHEN_EVENTS, MAX_CUSTOMERS_AT_WINDOW, STALL_KEY, WINDOW_RECT,
   customerLanes, customerPose, fitBubbleScale, windowToPixels,
 } from '../kitchen/kitchenConfig.js';
 
@@ -34,11 +34,8 @@ export class KitchenView {
     this.debug = new URLSearchParams(window.location.search).has('debugKitchen')
       ? scene.add.graphics().setDepth(10) : null;
 
-    // Prototipo: llegan clientes de prueba para validar capas, máscara y escala.
-    // TODO: reemplazar con lógica real de pedidos.
-    // Aquí se enganchará después la lógica real de pedidos.
-    this.firstArrival = scene.time.delayedCall(1500, () => this.spawnCustomer());
-    this.arrivals = scene.time.addEvent({ delay: 7000, loop: true, callback: () => this.spawnCustomer() });
+    this.firstArrival = scene.time.delayedCall(CUSTOMER_FIRST_ARRIVAL_MS, () => this.spawnCustomer());
+    this.arrivals = scene.time.addEvent({ delay: CUSTOMER_INTERVAL_MS, loop: true, callback: () => this.spawnCustomer() });
     this.setVisible(false);
   }
 
@@ -55,6 +52,7 @@ export class KitchenView {
   // Un cliente camina desde lejos hasta el vano; al llegar espera y se va.
   // Sin `key`, el zombie lo elige el CustomerPicker: salen todos antes de que se repita alguno.
   spawnCustomer(key = null, order = createOrder()) {
+    if (this.scene.finished || this.scene.session?.result) return null;
     if (this.customers.length >= MAX_CUSTOMERS_AT_WINDOW) return null;
     const textureKey = key ?? this.picker.next(this.customers.map((customer) => customer.key));
     const sprite = this.scene.add.image(0, 0, textureKey).setOrigin(0.5, 1).setTint(0xa9b8cf).setMask(this.mask);
@@ -80,7 +78,8 @@ export class KitchenView {
 
   // Empieza la cuenta atrás de la espera del cliente. Al llegar a 0 se agota su paciencia.
   startWaiting(customer) {
-    if (customer.dead) return;
+    if (customer.dead || this.scene.finished || this.scene.session?.result) return;
+    this.scene.powerUI?.event('customer-arrival');
     customer.hud.setVisible(true); // el reloj (ya creado sobre el globo) aparece al llegar
     this.updateWaitHud(customer, CUSTOMER_PATIENCE_MS);
     customer.wait = this.scene.tweens.addCounter({

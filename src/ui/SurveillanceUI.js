@@ -54,6 +54,7 @@ export class SurveillanceUI {
   }
 
   perform(action) {
+    if (!this.state.powerAvailable || this.state.controlsLocked) return;
     if (this.state.roomMode && this.state.monitorOpen) return;
     if (this.state.walking && !this.state.roomMode) return;
     const previousDoor = this.state.doorClosed;
@@ -74,8 +75,9 @@ export class SurveillanceUI {
       this.root.classList.toggle('monitor-mode', state.monitorOpen);
       this.root.classList.remove('portable-open', 'kitchen-mode', 'office-mode');
       document.querySelector('#camera-view').hidden = !state.monitorOpen;
-      this.light.disabled = this.door.disabled = state.monitorOpen || state.station !== 'door';
-      this.monitor.disabled = false;
+      this.light.disabled = !state.powerAvailable || state.controlsLocked || state.monitorOpen;
+      this.door.disabled = !state.powerAvailable || state.controlsLocked || state.monitorOpen || state.station !== 'door';
+      this.monitor.disabled = !state.powerAvailable || state.controlsLocked;
       this.light.setAttribute('aria-pressed', String(state.lightOn));
       this.door.setAttribute('aria-pressed', String(state.doorClosed));
       this.monitor.setAttribute('aria-expanded', String(state.monitorOpen));

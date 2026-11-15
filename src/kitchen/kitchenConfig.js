@@ -11,7 +11,7 @@ export const BACK_OPENS_MONITOR = false;
 export const MAX_ITEMS_PER_ORDER = 3;
 
 // Tiempo (ms) que un cliente espera su pedido desde que llega a la ventana. Al llegar a 0 se va.
-export const CUSTOMER_PATIENCE_MS = 20000;
+export const CUSTOMER_PATIENCE_MS = 32000;
 
 // Cuántos clientes pueden estar a la vez en la ventana.
 export const MAX_CUSTOMERS_AT_WINDOW = 2;
@@ -92,3 +92,7 @@ export function customerLanes(count, min = 0.3, max = 0.7) {
   if (count <= 1) return [(min + max) / 2];
   return Array.from({ length: count }, (_, i) => min + ((max - min) * i) / (count - 1));
 }
+
+// Ritmo compatible con preparar hasta tres productos y defender el acceso.
+export const CUSTOMER_FIRST_ARRIVAL_MS = 4500;
+export const CUSTOMER_INTERVAL_MS = 18000;

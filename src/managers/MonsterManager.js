@@ -13,6 +13,7 @@ export class MonsterManager {
     this.random = random;
     this.location = 'cam03';
     this.previous = null;
+    this.patrolMoves = 0;
     this.elapsed = 0;
     this.openExposure = 0;
     this.blockedElapsed = 0;
@@ -27,6 +28,9 @@ export class MonsterManager {
 
   chooseNext(progress) {
     const neighbors = ROOM_GRAPH[this.location];
+    // Conserva rutas aleatorias, pero evita un paseo infinito que permita ignorar
+    // el acceso por suerte. Tras tres movimientos, progresa hacia la puerta.
+    if (this.patrolMoves >= 3 || progress >= .5) return neighbors.find(room => DISTANCE[room] < DISTANCE[this.location]);
     const weighted = neighbors.map((room) => ({
       room,
       weight: (DISTANCE[room] < DISTANCE[this.location] ? 4 + progress * 3 : 1.3) * (room === this.previous ? 0.7 : 1),
@@ -40,6 +44,7 @@ export class MonsterManager {
   }
 
   enter(room, progress) {
+    this.patrolMoves = room === 'door' || this.location === 'door' ? 0 : this.patrolMoves + 1;
     this.previous = this.location;
     this.location = room;
     this.elapsed = 0;

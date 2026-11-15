@@ -1,8 +1,9 @@
+import { WendigoAttack } from '../room/WendigoAttack.js';
 import Phaser from 'phaser';
-import { SurveillanceManager } from '../managers/SurveillanceManager.js';
+import { ShiftSimulation } from '../managers/ShiftSimulation.js';
+import { PowerUI } from '../ui/PowerUI.js';
 import { SurveillanceUI } from '../ui/SurveillanceUI.js';
 import { getSurveillanceTexture, getMonsterPose } from '../config.js';
-import { NightSession } from '../managers/NightSession.js';
 import { CameraInterference } from '../ui/CameraInterference.js';
 import { FanEffect } from '../objects/FanEffect.js';
 import { KitchenView } from '../objects/KitchenView.js';
@@ -20,7 +21,13 @@ export class OfficeScene extends Phaser.Scene {
   create() {
     document.querySelector('#surveillance').className = 'office-mode';
     this.finished = false;
-    this.session = new NightSession();
+    this.attack = null;
+    this.shift = new ShiftSimulation();
+    this.session = this.shift.night;
+    this.state = this.shift.state;
+    this.clockLabel = null;
+    this.defeatCause = null;
+    this.powerUI = new PowerUI(this.shift.power,this.state);
     this.lastTick = performance.now();
     this.backdrop = this.add.image(0, 0, 'office').setOrigin(0.5);
     this.outgoing = this.add.image(0, 0, 'office').setOrigin(0.5).setAlpha(0);
@@ -29,7 +36,6 @@ export class OfficeScene extends Phaser.Scene {
     this.scare = new ScareManager();
     this.scareUI = new ScareMeterUI(this.scare);
     this.events.on(KITCHEN_EVENTS.CUSTOMER_TIMEOUT, this.onCustomerTimeout, this);
-    this.state = new SurveillanceManager({ roomMode: true });
     this.monster = this.session.monster;
     this.signal = new CameraSignal();
     this.room = new WalkRoomView(this);
@@ -47,13 +53,19 @@ export class OfficeScene extends Phaser.Scene {
       this.ui.destroy();
       this.interference.destroy();
       this.fan.destroy();
+      this.attack?.destroy();
       this.room.destroy();
+      this.powerUI.destroy();
       this.kitchen.destroy();
       this.events.off(KITCHEN_EVENTS.CUSTOMER_TIMEOUT, this.onCustomerTimeout, this);
       this.scareUI.destroy();
-      this.registry.get('audio').stop();
+      this.registry.get('audio').stop(Boolean(this.attack));
     });
     document.querySelector('#loading').hidden = true;
+    if(import.meta.env.DEV && new URLSearchParams(location.search).has('qaRoom')) {
+      window.__shiftQA=this;
+      this.events.once('shutdown',()=>{delete window.__shiftQA;});
+    }
   }
 
   openStation(view) {
@@ -132,6 +144,7 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   update(_time, delta) {
+    if(this.attack){if(this.attack.update(delta))this.showResult(true);return;}
     if (this.finished) return;
     this.fan.update(delta);
     // Reloj monotónico: la duración no depende de los FPS ni de la limitación de delta de Phaser.
@@ -139,30 +152,44 @@ export class OfficeScene extends Phaser.Scene {
     const elapsed = Math.max(0, now - this.lastTick);
     this.lastTick = now;
     this.kitchen.cooking.update(elapsed);
+    const events = this.shift.update(elapsed);
     this.room.update(delta);
-    const events = this.session.update(elapsed, this.state.roomMode ? this.room.doorMotion.sealed : this.state.doorClosed);
+    this.powerUI.update();
     this.updateClock();
     if (this.session.result) {
       this.finished = true;
+      this.state.controlsLocked = true;
       this.registry.get('progress').record(this.session.result, this.session.elapsed);
-      this.scene.start('Result', { result: this.session.result, elapsed: this.session.elapsed, cause: this.defeatCause, served: this.kitchen.cooking.served });
+      if(this.session.result==='lost'&&this.defeatCause!=='customers'){
+        this.state.monitorOpen=false;this.ui.sync();
+        this.attack=new WendigoAttack(this.room);
+        this.registry.get('audio').defeat();
+      }else this.showResult(false);
       return;
     }
     for (const event of events) {
-      if (event.type === 'retreat') this.registry.get('audio').retreat();
+      if (event.type === 'retreat') { this.registry.get('audio').retreat();this.powerUI.event('retreat'); }
+      if (event.type === 'move' && event.to === 'door') {this.powerUI.event('arrival');this.registry.get('audio').arrival();}
+      if (event.type.startsWith('power-')) {
+        this.powerUI.event(event.type);
+        this.registry.get('audio').powerWarning(event.type);
+        if(event.type==='power-empty'){this.room.releaseMouseLock();this.ui.sync();}
+      }
       if (event.type === 'move') this.signal.departure(event.from, this.session.elapsed - elapsed + event.atMs);
     }
     this.interference.setLost(this.state.monitorOpen && this.signal.isLost(this.state.camera, this.session.elapsed));
     if (events.length || this.currentPose !== getMonsterPose(this.monster)) this.renderView(this.state);
   }
 
+  showResult(attackPlayed) {
+    this.scene.start('Result',{result:this.session.result,elapsed:this.session.elapsed,cause:this.defeatCause,served:this.kitchen.cooking.served,attackPlayed});
+  }
+
   updateClock() {
-    const clock = this.session.clock;
-    const label = clock.hours + ':' + String(clock.minutes).padStart(2, '0');
+    const label = this.session.clockLabel;
     if (label === this.clockLabel) return;
     this.clockLabel = label;
-    document.querySelector('#clock-hours').textContent = String(clock.hours);
-    document.querySelector('#clock-minutes').textContent = String(clock.minutes).padStart(2, '0');
+    document.querySelector('#clock-hours').textContent = label;
   }
 
   fitBackground() {

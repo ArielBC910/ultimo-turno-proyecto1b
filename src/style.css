@@ -1148,8 +1148,7 @@ kbd {
 
 
 /* Menú principal y resultados de la noche */
-.time #clock-hours,
-.time #clock-minutes {
+.time #clock-hours {
   color: #eee9d8;
 }
 
@@ -1626,4 +1625,46 @@ kbd {
     padding: 5px 7px;
     gap: 6px;
   }
+}
+.power-panel { position:absolute; z-index:9; top:115px; left:4%; width:290px; padding:12px 14px; color:#e0d8bc; background:#101610e8; border:1px solid #72765a88; pointer-events:none; font:11px monospace; }
+.power-panel header { display:flex; justify-content:space-between; letter-spacing:2px; }
+.power-panel strong { font-size:17px; }
+.power-panel progress { display:block; width:100%; height:8px; margin:9px 0; accent-color:#aab780; }
+.power-panel progress::-webkit-progress-bar { background:#293026; }
+.power-panel progress::-webkit-progress-value { background:#aab780; }
+.power-load { font-size:10px; line-height:1.6; color:#b9c2a7; }
+.power-panel p:empty { display:none; }
+.power-panel p { margin:9px 0 0; line-height:1.5; }
+.power-notice { color:#e8be7c; }
+.threat-notice { color:#ecd6ac; border-top:1px solid #726443; padding-top:8px; }
+.power-panel[data-level="critical"],.power-panel[data-level="empty"] { border-color:#b77052; }
+.power-panel[data-level="critical"] progress::-webkit-progress-value { background:#d68a55; }
+.menu-mode .power-panel,.result-mode .power-panel { display:none; }
+@media(max-width:700px){.power-panel{top:85px;width:220px;font-size:10px}.power-panel strong{font-size:13px}.room-qa{top:230px}}
+
+.monitor-mode .power-panel { top:auto; bottom:210px; }
+.room-qa { top:auto; bottom:50px; }
+/* Pedidos legibles: nombres y cantidades, sin depender de emojis diminutos. */
+.room-3d-mode .room-orders { width: min(430px,38vw); max-height: calc(100vh - 290px); overflow-y:auto; bottom:155px; padding:18px; background:#111713f5; border:1px solid #afa58088; font-family:system-ui,sans-serif; }
+.room-orders header { font-size:14px; }
+.room-orders .food-buttons button { font-size:14px; min-height:44px; }
+.room-orders .customer-order { background:#263127; padding:12px; border:1px solid #78806a; border-radius:3px; gap:12px; }
+.room-orders .customer-order>span { flex:1; font-size:14px; }
+.room-orders .customer-order b { display:block; font-size:12px; letter-spacing:1px; color:#cad6ba; }
+.room-orders .order-items { display:block; font-size:19px; line-height:1.5; margin:6px 0; color:#fff5d9; font-weight:650; }
+.room-orders .customer-order small { font-size:14px; color:#d8dfc8; }
+.room-orders .customer-order button { font-size:13px; padding:12px; }
+.room-orders .patience-bar { display:block; width:100%; height:7px; margin-top:8px; accent-color:#b9cd89; }
+.room-orders .order-urgent { border-color:#e5a16b; background:#42271f; }
+.room-orders .order-urgent .patience-bar { accent-color:#ee986e; }
+.room-orders .food-tray span { font-size:14px; line-height:1.5; }
+.room-orders .prep-status,.room-orders .kitchen-feedback { font-size:12px; }
+.wendigo-blackout { position:absolute; inset:0; background:#000; z-index:50; opacity:0; pointer-events:auto; }
+.wendigo-attack .walk-hud,.wendigo-attack .power-panel,.wendigo-attack .topbar,.wendigo-attack .scare-meter,.wendigo-attack #return-menu { visibility:hidden; }
+@media(max-width:700px){.room-3d-mode .room-orders{width:48vw;padding:10px;max-height:55vh}.room-orders .order-items{font-size:15px}.room-orders .food-buttons button{font-size:12px}}
+
+@media(min-width:701px){
+ .room-3d-mode .room-orders{max-height:calc(100vh - 410px);overflow:visible;}
+ .room-orders .customer-orders{position:fixed;right:4%;top:220px;width:min(350px,30vw);max-height:calc(100vh - 350px);overflow-y:auto;}
+ .room-orders .customer-orders>p{padding:14px;background:#111713ec;border:1px solid #78806a;color:#e4dfc8;}
 }

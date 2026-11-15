@@ -2,7 +2,7 @@
 
 Repositorio: [ArielBC910/ultimo-turno-proyecto1b](https://github.com/ArielBC910/ultimo-turno-proyecto1b).
 
-Juego de vigilancia nocturna en un restaurante de comida rápida, con JavaScript, Phaser 3.90 y Vite 7. Sobrevive seis minutos reales, desde las 12:00 AM hasta las 6:00 AM, vigilando cuatro cámaras, iluminando el acceso y cerrando la puerta cuando se acerque el wendigo.
+Juego de vigilancia nocturna en un restaurante de comida rápida, con JavaScript, Phaser 3.90 y Vite 7. Sobrevive seis minutos reales, desde las 12 AM hasta las 6 AM, vigilando cuatro cámaras, iluminando el acceso y cerrando la puerta cuando se acerque el wendigo.
 
 ## Ejecutar
 
@@ -30,18 +30,18 @@ La compilación genera dist/. La vista previa usa http://127.0.0.1:4174. Las pru
 2. Revisa comedor, mostrador, bodega y pasillo. La cocina está detrás de la oficina y no tiene cámara.
 3. Usa la linterna: sin ella el acceso central queda casi negro. Cuando el wendigo llega a la oficina, aparece de pie en el centro del acceso, detrás del plano de la puerta.
 4. Si el wendigo llega al acceso, cierra la puerta. Tras entre 5 y 15 segundos continuos de cierre, se retira: escucharás un golpe metálico y un grito.
-5. Sobrevive hasta las 6:00 AM. Al ganar o perder puedes volver al menú o iniciar otra partida.
+5. Sobrevive hasta las 6 AM. Al ganar o perder puedes volver al menú o iniciar otra partida.
 
 | Acción | Botón | Teclado |
 | --- | --- | --- |
-| Abrir/cerrar la puerta | Cerrar puerta / Abrir puerta | D |
+| Abrir/cerrar la puerta | Cerrar puerta / Abrir puerta | X |
 | Encender/apagar la linterna | Iluminar | F |
 | Abrir/cerrar el monitor | Cámaras / Volver a oficina | C |
 | Cerrar el monitor | Volver a oficina | Escape |
 | Elegir cámara | Lista o plano | 1–4 |
 | Silenciar/reactivar audio | Audio activado / Activar audio | Botón accesible con Tab |
 
-Cada segundo real equivale a un minuto del reloj del juego. La duración total es exactamente 360000 ms. El reloj sigue contando si cambias de pestaña; volver al menú abandona esa partida.
+El HUD muestra únicamente horas: 12 AM, 1 AM, …, 6 AM; cambia cada 60 segundos reales. La duración total es exactamente 360000 ms. El reloj sigue contando si cambias de pestaña; volver al menú abandona esa partida.
 
 Frente al acceso, el wendigo mata tras acumular 15 segundos con la puerta abierta durante esa visita. Cerrar bloquea el ataque; reabrir antes de que se retire conserva el tiempo de exposición ya acumulado y cancela el intervalo de retirada. La linterna sirve para verlo y no lo ahuyenta.
 
@@ -74,7 +74,7 @@ localStorage conserva la preferencia de audio, el mejor tiempo sobrevivido y las
 - public/assets/audio/: efectos OGG y ambiente WAV.
 - tests/monster.test.js: pruebas de IA, reloj, retirada, ataque y final de partida.
 
-Arcade Physics permanece habilitado para desarrollo posterior. La amenaza actual se representa mediante estados de salas e imágenes, sin colisiones físicas. No se han añadido batería ni consumo de energía; la puerta puede mantenerse cerrada.
+Arcade Physics permanece habilitado para desarrollo posterior. La amenaza actual se representa mediante estados de salas e imágenes, sin colisiones físicas. La batería compartida limita puerta, linterna y cámaras. `PowerManager` centraliza sus tasas y `ShiftSimulation` integra consumo, cierre físico y ataques con el mismo tiempo transcurrido.
 
 ## Créditos y trabajo académico
 
@@ -83,3 +83,25 @@ Los escenarios y variantes se generaron mediante image_gen.imagegen, usando las 
 Phaser y Vite conservan sus licencias. Los efectos de rubberduck son CC0, con fuentes en docs/AUDIO.md. El ambiente es síntesis original regenerable con `node scripts/generate-ambient.mjs`.
 
 Los requisitos y entregables académicos pendientes están registrados en docs/REQUISITOS.md. No se considera la entrega académica final: faltan medir rendimiento en dispositivos reales y completar los demás entregables.
+
+
+## Energía y supervivencia (modo 3D)
+
+La noche dura 360000 ms. La batería empieza al 100 %, sin regeneración:
+
+| Sistema activo | Consumo por segundo real |
+| --- | --- |
+| Linterna | 0,12 % |
+| Cámaras abiertas | 0,18 % |
+| Puerta cerrada | 0,52 % |
+| Los tres simultáneamente | 0,82 % |
+
+Los valores se ajustan en `src/managers/PowerManager.js`. La puerta sola agota la batería en aproximadamente 192,3 s y todo encendido en 122 s. Los avisos de 25 %, 10 % y 0 % se emiten una sola vez. A cero se apagan luz y monitor, se abre la puerta y se bloquean sus controles; caminar, mirar, girar, cocinar y entregar siguen disponibles. Agotarse no mata automáticamente: continúa el ataque normal con 15 s de exposición acumulada.
+
+WASD mueve; clic en la sala captura el ratón, Esc lo libera; si el navegador rechaza la captura, arrastra para mirar; flechas izquierda/derecha permiten mirar sin ratón y V gira. F enciende la linterna desde cualquier punto y sigue la mirada. C abre/cierra el monitor; 1–4 cambia canal. X acciona la puerta solamente cerca del acceso. B/H/P/R preparan comida; E entrega al primer cliente esperando; T vacía la bandeja. Las teclas de acción ignoran la repetición al mantenerlas pulsadas.
+
+Revisa CAM 04 para anticipar la llegada. Los pasos en el acceso y su aviso visual dejan tiempo para volver desde la cocina; cierra y espera el golpe/grito de retirada antes de reabrir. El monstruo conserva rutas conectadas y aleatorias; después de tres movimientos de patrulla o desde las 3 AM prioriza avanzar para evitar noches sin amenazas por azar.
+
+Los clientes llegan cada 18 s (primero a los 4,5 s), caminan 9 s y esperan 32 s. Como máximo hay dos en la ventana; cuatro pedidos abandonados causan derrota. Estos valores están en `kitchenConfig.js`. La cocina no gasta batería. La preparación continúa mientras vigilas. Es posible defender el acceso y volver a entregar un pedido de tres productos dentro de la paciencia.
+
+`npm test` incluye simulaciones a 15/30/60/144 FPS, agotamiento durante un frame largo, controles bloqueados, límites de hora, victoria/derrota, reinicio y 100 semillas para estrategias de defensa y puerta permanente. Las simulaciones de energía no sustituyen las pruebas visuales de pedidos y navegación.

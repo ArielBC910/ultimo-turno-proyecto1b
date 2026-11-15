@@ -24,6 +24,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('fan-rotor', 'assets/images/fan-rotor.png');
     preloadKitchenAssets(this);
     this.load.audio('door-bang', 'assets/audio/door-bang.ogg');
+    this.load.audio('foxy-jumpscare', 'assets/audio/foxy-jumpscare.wav');
     this.load.audio('wendigo-scream', 'assets/audio/wendigo-scream.ogg');
     this.load.audio('night-ambient', 'assets/audio/night-ambient.wav');
     this.load.audio('night-music', 'assets/audio/night-music.wav');
