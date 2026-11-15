@@ -14,6 +14,8 @@ import { triggerJumpscare } from '../kitchen/jumpscare.js';
 import { WalkRoomView } from '../objects/WalkRoomView.js';
 import { CameraSignal } from '../managers/CameraSignal.js';
 import { FACING } from '../kitchen/kitchenConfig.js';
+import { PauseManager } from '../managers/PauseManager.js';
+import { PauseUI } from '../ui/PauseUI.js';
 
 export class OfficeScene extends Phaser.Scene {
   constructor() { super('Office'); }
@@ -27,7 +29,7 @@ export class OfficeScene extends Phaser.Scene {
     this.state = this.shift.state;
     this.clockLabel = null;
     this.defeatCause = null;
-    this.powerUI = new PowerUI(this.shift.power,this.state);
+    this.powerUI = new PowerUI(this.shift.power, this.state);
     this.lastTick = performance.now();
     this.backdrop = this.add.image(0, 0, 'office').setOrigin(0.5);
     this.outgoing = this.add.image(0, 0, 'office').setOrigin(0.5).setAlpha(0);
@@ -47,9 +49,19 @@ export class OfficeScene extends Phaser.Scene {
       () => this.returnToRoom());
     this.updateClock();
     this.fitBackground();
+    // Pausa: no se puede durante la derrota ni el resultado. Al ocultar la pestaña se pausa sola, porque el
+    // reloj de la noche usa performance.now() y seguiría contando mientras el navegador detiene el juego.
+    this.pauseControl = new PauseManager({ canPause: () => !this.finished && !this.attack && !this.session.result });
+    this.pauseControl.subscribe((paused) => (paused ? this.freeze() : this.unfreeze()));
+    this.pauseUI = new PauseUI(this.pauseControl, { onMenu: () => this.quitToMenu() });
+    this.autoPause = () => this.pauseControl.pause();
+    this.game.events.on(Phaser.Core.Events.HIDDEN, this.autoPause);
     this.scale.on('resize', this.fitBackground, this);
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.fitBackground, this);
+      this.game.events.off(Phaser.Core.Events.HIDDEN, this.autoPause);
+      this.pauseControl.reset();
+      this.pauseUI.destroy();
       this.ui.destroy();
       this.interference.destroy();
       this.fan.destroy();
@@ -62,10 +74,28 @@ export class OfficeScene extends Phaser.Scene {
       this.registry.get('audio').stop(Boolean(this.attack));
     });
     document.querySelector('#loading').hidden = true;
-    if(import.meta.env.DEV && new URLSearchParams(location.search).has('qaRoom')) {
-      window.__shiftQA=this;
-      this.events.once('shutdown',()=>{delete window.__shiftQA;});
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('qaRoom')) {
+      window.__shiftQA = this;
+      this.events.once('shutdown', () => { delete window.__shiftQA; });
     }
+  }
+
+  // Pausa: Phaser detiene la escena (actualización, temporizadores y tweens); el audio y la sala 3D se avisan aparte.
+  freeze() {
+    this.scene.pause();
+    this.registry.get('audio').pause();
+    this.room.releaseInput();
+  }
+
+  unfreeze() {
+    this.lastTick = performance.now(); // el tiempo en pausa no cuenta para la noche
+    this.scene.resume();
+    this.registry.get('audio').resume();
+  }
+
+  quitToMenu() {
+    this.pauseControl.resume();
+    this.scene.start('Menu');
   }
 
   openStation(view) {
@@ -144,7 +174,7 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   update(_time, delta) {
-    if(this.attack){if(this.attack.update(delta))this.showResult(true);return;}
+    if (this.attack) { if (this.attack.update(delta)) this.showResult(true); return; }
     if (this.finished) return;
     this.fan.update(delta);
     // Reloj monotónico: la duración no depende de los FPS ni de la limitación de delta de Phaser.
@@ -160,20 +190,20 @@ export class OfficeScene extends Phaser.Scene {
       this.finished = true;
       this.state.controlsLocked = true;
       this.registry.get('progress').record(this.session.result, this.session.elapsed);
-      if(this.session.result==='lost'&&this.defeatCause!=='customers'){
-        this.state.monitorOpen=false;this.ui.sync();
-        this.attack=new WendigoAttack(this.room);
+      if (this.session.result === 'lost' && this.defeatCause !== 'customers') {
+        this.state.monitorOpen = false; this.ui.sync();
+        this.attack = new WendigoAttack(this.room);
         this.registry.get('audio').defeat();
-      }else this.showResult(false);
+      } else this.showResult(false);
       return;
     }
     for (const event of events) {
-      if (event.type === 'retreat') { this.registry.get('audio').retreat();this.powerUI.event('retreat'); }
-      if (event.type === 'move' && event.to === 'door') {this.powerUI.event('arrival');this.registry.get('audio').arrival();}
+      if (event.type === 'retreat') { this.registry.get('audio').retreat(); this.powerUI.event('retreat'); }
+      if (event.type === 'move' && event.to === 'door') { this.powerUI.event('arrival'); this.registry.get('audio').arrival(); }
       if (event.type.startsWith('power-')) {
         this.powerUI.event(event.type);
         this.registry.get('audio').powerWarning(event.type);
-        if(event.type==='power-empty'){this.room.releaseMouseLock();this.ui.sync();}
+        if (event.type === 'power-empty') { this.room.releaseMouseLock(); this.ui.sync(); }
       }
       if (event.type === 'move') this.signal.departure(event.from, this.session.elapsed - elapsed + event.atMs);
     }
@@ -182,7 +212,7 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   showResult(attackPlayed) {
-    this.scene.start('Result',{result:this.session.result,elapsed:this.session.elapsed,cause:this.defeatCause,served:this.kitchen.cooking.served,attackPlayed});
+    this.scene.start('Result', { result: this.session.result, elapsed: this.session.elapsed, cause: this.defeatCause, served: this.kitchen.cooking.served, attackPlayed });
   }
 
   updateClock() {
@@ -207,4 +237,3 @@ export class OfficeScene extends Phaser.Scene {
     this.room?.fit();
   }
 }
-

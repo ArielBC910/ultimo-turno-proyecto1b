@@ -39,12 +39,12 @@ export class AudioManager {
   }
 
   setRoomPose(x, z, angle) {
-    const fan=this.loops?.['fan-loop'];
-    if(!fan)return;
-    const dx=1.04-x, dz=-1.2-z;
-    const distance=Math.hypot(dx,dz);
-    fan.setPan(Math.max(-1,Math.min(1,(-Math.sin(angle)*dx+Math.cos(angle)*dz)/Math.max(.5,distance))));
-    fan.setVolume(.31/(1+distance*.25));
+    const fan = this.loops?.['fan-loop'];
+    if (!fan) return;
+    const dx = 1.04 - x, dz = -1.2 - z;
+    const distance = Math.hypot(dx, dz);
+    fan.setPan(Math.max(-1, Math.min(1, (-Math.sin(angle) * dx + Math.cos(angle) * dz) / Math.max(.5, distance))));
+    fan.setVolume(.31 / (1 + distance * .25));
   }
 
   interaction(kind, value) {
@@ -54,7 +54,7 @@ export class AudioManager {
 
   arrival() { this.game.sound.play('door-bang', { volume: .42, rate: .7, pan: 0 }); }
 
-  powerWarning(type) { this.game.sound.play('flashlight-click', { volume: type==='power-empty'?.65:.35, rate: .65 }); }
+  powerWarning(type) { this.game.sound.play('flashlight-click', { volume: type === 'power-empty' ? .65 : .35, rate: .65 }); }
 
   retreat() {
     this.game.sound.play('door-bang', { volume: 0.8 });
@@ -62,14 +62,20 @@ export class AudioManager {
   }
 
   defeat() {
-    if(this.defeatSound?.isPlaying)return;
+    if (this.defeatSound?.isPlaying) return;
     this.game.sound.stopAll();
-    this.defeatSound ??= this.game.sound.add('foxy-jumpscare',{volume:.8,rate:1});
+    this.defeatSound ??= this.game.sound.add('foxy-jumpscare', { volume: .8, rate: 1 });
     this.defeatSound.play();
   }
 
-  stop(preserveDefeat=false) {
-    if(preserveDefeat){for(const loop of Object.values(this.loops??{}))loop.stop();}
+  // Pausa: congela todos los sonidos donde están y los retoma al continuar.
+  pause() { this.game.sound.pauseAll(); }
+
+  resume() { this.game.sound.resumeAll(); }
+
+  stop(preserveDefeat = false) {
+    if (preserveDefeat) { for (const loop of Object.values(this.loops ?? {})) loop.stop(); }
     else this.game.sound.stopAll();
   }
 }
+
