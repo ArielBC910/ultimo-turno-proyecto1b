@@ -258,7 +258,7 @@ export class KitchenView {
   }
 
   // El cliente se cansó de esperar sin ser atendido.
-  // reason: 'timeout' (se agotó la espera) o 'wrong' (le dieron un producto que no pidió). Ambos cuentan igual.
+  // reason: 'timeout' (se agotó la espera) o 'wrong' (le dieron un producto que no pidió).
   expire(customer, reason = 'timeout') {
     if (customer.dead || customer.served) return;
     // GANCHO JUMPSCARE / BARRA DE SUSTO: quien necesite reaccionar escucha este evento:
@@ -463,7 +463,7 @@ export class KitchenView {
     const result = customer.progress.deliver(productId);
     if (!result.accepted) {
       this.showReject(customer);
-      this.expire(customer, 'wrong'); // mismo castigo que agotar la espera: susto y jumpscare
+      this.expire(customer, 'wrong');
       return false; // la comida equivocada también cae
     }
     customer.bubble.getData('icons')[result.index].setTexture(customer.bubble.getData('doneTexture')).setTint(0xb5c198);

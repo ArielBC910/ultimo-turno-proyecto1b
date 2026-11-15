@@ -50,13 +50,18 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   // Un cliente zombie se cansó de esperar sin ser atendido: sube el susto y se dispara el jumpscare.
-  onCustomerTimeout(customer) {
-    if (this.finished) return;
+  onCustomerTimeout(customer, reason) {
+    if (this.finished || reason !== 'timeout') return;
     const justFilled = this.scare.add();
     this.scareUI.sync();
-    // Qué ocurre al llenarse la barra aún no está definido: quien lo decida escucha este evento.
     if (justFilled) this.events.emit(KITCHEN_EVENTS.SCARE_FULL);
-    triggerJumpscare(this, customer);
+    const showedScare = triggerJumpscare(this, customer, justFilled);
+    if (justFilled && !showedScare) {
+      this.finished = true;
+      const { elapsed } = this.session;
+      this.registry.get('progress').record('lost', elapsed);
+      this.scene.start('Result', { result: 'lost', elapsed, cause: 'scare' });
+    }
   }
 
   renderView(state) {

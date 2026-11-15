@@ -26,7 +26,7 @@ export class ResultScene extends Phaser.Scene {
     document.querySelector('#result-eyebrow').textContent = won ? 'TURNO COMPLETADO' : 'SEÑAL PERDIDA';
     document.querySelector('#result-title').textContent = won ? '6:00 AM' : 'NO LLEGASTE AL AMANECER';
     document.querySelector('#result-message').textContent = won ? 'La noche terminó. Sigues aquí.'
-      : attack ?? 'El wendigo entró por el acceso frontal.';
+      : attack ?? (cause === 'scare' ? 'La barra de susto se llenó.' : 'El wendigo entró por el acceso frontal.');
     const minutes = Math.floor(elapsed / 60000);
     const seconds = Math.floor(elapsed / 1000) % 60;
     document.querySelector('#result-time').textContent = 'SOBREVIVISTE ' + minutes + ':' + String(seconds).padStart(2, '0') + ' / 6:00';
