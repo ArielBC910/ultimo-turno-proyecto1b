@@ -16,7 +16,7 @@ export class ResultScene extends Phaser.Scene {
       doll: 'La Muñeca de Trapo cruzó el mostrador.',
     }[cause];
     const won = result === 'won';
-    const wendigoAttack = result === 'lost' && !cause && !attackPlayed;
+    const wendigoAttack = result === 'lost' && !cause;
     const root = document.querySelector('#surveillance');
     const panel = document.querySelector('#result-screen');
     root.className = 'result-mode' + (won ? ' victory-mode' : ' defeat-mode');

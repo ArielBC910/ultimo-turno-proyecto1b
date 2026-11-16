@@ -2203,6 +2203,12 @@ kbd {
     gap: 6px;
   }
 }
+#surveillance.rabbit-attack #game {
+  z-index: 51;
+  visibility: visible;
+  filter: none;
+}
+
 .rabbit-attack .topbar,
 .rabbit-attack .console,
 .rabbit-attack .office-label,
