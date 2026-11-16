@@ -8,6 +8,7 @@ import { OrderProgress, dropTargetAt } from '../kitchen/serving.js';
 import { ServingTrays } from './ServingTrays.js';
 import { nextArrivalDelay } from '../kitchen/arrivals.js';
 import { formatWait, isWaitWarning } from '../kitchen/patience.js';
+import { CookingStation } from '../kitchen/CookingStation.js';
 import {
   ARRIVAL_RETRY_MS, FIRST_ARRIVAL_MS, CUSTOMER_ENTRY_X, CUSTOMER_KEYS, CUSTOMER_PATIENCE_MS, KITCHEN_EVENTS, MAX_CUSTOMERS_AT_WINDOW, STALL_KEY, WINDOW_RECT,
   customerLanes, customerPose, windowToPixels,
@@ -73,6 +74,8 @@ export class KitchenView {
   constructor(scene, getProgress = () => 0) {
     this.scene = scene;
     this.customers = [];
+    this.cooking = new CookingStation();
+    this.nextCustomerId = 1;
     this.picker = new CustomerPicker(CUSTOMER_KEYS);
     this.visible = false;
     this.win = { x: 0, y: 0, w: 0, h: 0 };
@@ -100,7 +103,7 @@ export class KitchenView {
     this.trays = new ServingTrays(scene, {
       onHover: (productId, x, y) => this.highlightCustomer(productId, x, y),
       onSelect: (productId) => this.serveSelected(productId),
-      onRelease: (productId, x, y) => this.serve(productId, x, y),
+      onRelease: (productId, x, y) => this.serveDroppedProduct(productId, x, y),
       onDrop: (productId) => scene.events.emit(KITCHEN_EVENTS.FOOD_DROPPED, productId),
     });
     this.debug = new URLSearchParams(window.location.search).has('debugKitchen')
@@ -153,6 +156,7 @@ export class KitchenView {
   // Un cliente camina desde lejos hasta el vano; al llegar espera y se va.
   // Sin `key`, el zombie lo elige el CustomerPicker: salen todos antes de que se repita alguno.
   spawnCustomer(key = null, order = createOrder()) {
+    if (this.scene.finished || this.scene.session?.result) return null;
     if (this.customers.length >= MAX_CUSTOMERS_AT_WINDOW) return null;
     const textureKey = key ?? this.picker.next(this.customers.map((customer) => customer.key));
     const profileKey = textureKey + '-profile';
@@ -166,7 +170,7 @@ export class KitchenView {
     const lane = Phaser.Utils.Array.GetRandom(free);
     const bubble = this.createTicket(order);
     const customer = {
-      key: textureKey, sprite, lightReflection, order, bubble, hud: bubble.getData('hud'), lane, p: 0,
+      id: this.nextCustomerId++, key: textureKey, sprite, lightReflection, order, bubble, hud: bubble.getData('hud'), lane, p: 0,
       entryKey,
       stepKey: this.scene.textures.exists(textureKey + '-step') ? textureKey + '-step' : entryKey,
       entrance: ENTRANCES[CUSTOMER_KEYS.indexOf(textureKey)] ?? ENTRANCES[0],
@@ -187,7 +191,7 @@ export class KitchenView {
     bubble.setVisible(false);
     this.customers.push(customer);
     this.layout(customer);
-    this.scene.tweens.addCounter({
+    customer.arrival = this.scene.tweens.addCounter({
       from: 0, to: WALK_DURATION_MS, duration: WALK_DURATION_MS,
       onUpdate: (tween) => {
         customer.walkMs = tween.getValue();
@@ -239,7 +243,8 @@ export class KitchenView {
 
   // Empieza la cuenta atrás de la espera del cliente. Al llegar a 0 se agota su paciencia.
   startWaiting(customer) {
-    if (customer.dead) return;
+    if (customer.dead || this.scene.finished || this.scene.session?.result) return;
+    this.scene.powerUI?.event('customer-arrival');
     customer.turn = 1;
     customer.p = 1;
     customer.sprite.setTexture([RABBIT_KEY, DOLL_KEY, TWINS_KEY, BEAST_KEY, MUTANT_KEY, SMILE_KEY, HERMIT_KEY, VOID_KEY].includes(customer.key) ? customer.key : customerPortrait(this.scene.textures, customer.key));
@@ -283,6 +288,7 @@ export class KitchenView {
     }
     customer.handGlow?.destroy();
     customer.handGlow = null;
+    customer.arrival?.stop();
     customer.wait?.stop();
     customer.wait = null; // el reloj y el globo se desvanecen juntos
     this.scene.tweens.add({
@@ -294,6 +300,20 @@ export class KitchenView {
         this.customers = this.customers.filter((item) => item !== customer);
       },
     });
+  }
+
+  prepare(product) {
+    if (this.scene.finished || this.scene.state.station !== 'kitchen') return false;
+    return this.cooking.prepare(product);
+  }
+
+  serve(id) {
+    if (this.scene.finished || this.scene.state.station !== 'kitchen') return 'out-of-reach';
+    const customer = this.getCustomers().find(item => item.id === id);
+    if (!customer) return 'gone';
+    const result = this.cooking.serve(customer.order, Boolean(customer.wait));
+    if (result === 'served') this.finishOrder(customer);
+    return result;
   }
 
   layout(customer) {
@@ -447,7 +467,7 @@ export class KitchenView {
   }
 
   // El jugador suelta `productId` en (x, y). Devuelve true si algún cliente lo aceptó; si no, la comida cae.
-  serve(productId, x, y) {
+  serveDroppedProduct(productId, x, y) {
     const target = dropTargetAt(x, y, this.dropTargets());
     if (!target) return false;
     return this.deliver(target.customer, productId);
@@ -467,7 +487,10 @@ export class KitchenView {
       return false; // la comida equivocada también cae
     }
     customer.bubble.getData('icons')[result.index].setTexture(customer.bubble.getData('doneTexture')).setTint(0xb5c198);
-    if (result.complete) this.finishOrder(customer);
+    if (result.complete) {
+      this.cooking.served++;
+      this.finishOrder(customer);
+    }
     return true;
   }
 

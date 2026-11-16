@@ -22,7 +22,7 @@
         <h1>ÚLTIMO TURNO<span>VIGILANCIA NOCTURNA</span></h1>
       </div>
       <div class="shift">
-        <div class="time"><span id="clock-hours">12</span>:<span id="clock-minutes">00</span> <small>AM</small></div>
+        <div class="time"><span id="clock-hours">12 AM</span></div>
         <span class="eyebrow">NOCHE 01 · SOBREVIVE HASTA LAS 6 AM</span>
       </div>
     </header>
@@ -39,17 +39,23 @@
         <h2>ÚLTIMO<br><span>TURNO</span></h2>
         <p class="menu-intro">El restaurante cerró a medianoche.<br>Tu turno termina cuando salga el sol.</p>
         <button id="start-button">SOBREVIVIR LA NOCHE <span>↗</span></button>
-        <p class="menu-duration">6 MINUTOS REALES <span>12:00 AM — 6:00 AM</span></p>
+        <p class="menu-duration">6 MINUTOS REALES <span>12 AM — 6 AM</span></p>
         <details class="menu-help">
           <summary>ANTES DE COMENZAR</summary>
           <p>Vigila las cuatro cámaras y usa la linterna para descubrir qué se esconde en el acceso. El wendigo toma
             decisiones al azar e intenta acercarse.</p>
           <p>Si está frente a ti, tienes hasta 15 segundos de exposición con la puerta abierta. Ciérrala y mantenla
             cerrada: después de 5 a 15 segundos oirás un golpe y un grito. Entonces se habrá retirado.</p>
-          <p><b>D</b> Puerta · <b>F</b> Linterna · <b>C</b> Monitor · <b>1–4</b> Cámaras. También puedes usar los
-            botones.</p>
+          <p><b>WASD</b> Caminar · clic en la sala para capturar el ratón; Esc lo libera · <b>V</b> Darse la vuelta.
+            Estás en una misma sala: puerta al frente y cocina detrás. Los controles se activan al acercarte.</p>
+          <p>En la puerta: <b>X</b> Abrir/cerrar. <b>F</b> Linterna desde cualquier lugar. <b>C</b> abre las cámaras a pantalla completa desde cualquier lugar, incluso en la cocina. <b>1–4</b> cambia de cámara y <b>Esc</b> cierra el monitor.
+            Cada postura dura al menos 15 segundos. Si el monstruo abandona una cámara, su señal se pierde durante 2,5 segundos.</p>
+          <p>La noche dura <b>6 minutos reales</b>. Una batería alimenta luz (0,12 %/s), cámaras (0,18 %/s) y puerta cerrada (0,52 %/s). Los consumos se suman. A cero, la puerta se abre y los dispositivos se bloquean. Escucha los pasos, cierra al llegar la amenaza y reabre tras el golpe de retirada.</p>
+            <p>Atiende los pedidos: cuatro clientes perdidos terminan la partida. Dispones de 32 segundos desde su llegada. La cocina funciona sin batería. Consulta las cámaras brevemente; CAM 04 anticipa el acceso.</p>
+            <p>En la cocina, prepara con los botones o <b>B</b> hamburguesa, <b>H</b> hot dog, <b>P</b> papas y <b>R</b> bebida.
+            Espera a que termine la preparación y pulsa ENTREGAR junto al cliente o <b>E</b> para el primero que espera. La bandeja debe coincidir con su pedido; <b>T</b> la vacía. Las cámaras siguen disponibles mientras cocinas.</p>
         </details>
-        <div class="menu-record"><span>MEJOR TURNO <b id="menu-best">0:00</b></span><span>NOCHES SUPERADAS <b
+        <div class="menu-record"><span>MEJOR TURNO <b id="menu-best">12 AM</b></span><span>NOCHES SUPERADAS <b
               id="menu-wins">0</b></span></div>
         <span class="menu-version">RESTAURANTE CERRADO / PERSONAL AUTORIZADO</span>
       </div>
@@ -126,7 +132,7 @@
             <path d="M5 21V3h14v18 M3 21h18 M9 3v18 M15 12h1" />
           </svg>
           <span><strong id="door-label">CERRAR PUERTA</strong><small id="door-state">PUERTA FRONTAL
-              ABIERTA</small></span><kbd>D</kbd>
+              ABIERTA</small></span><kbd>X</kbd>
         </button>
         <button id="light-button" class="control-button" aria-pressed="false" disabled>
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -150,7 +156,7 @@
               CÁMARAS</small></span><kbd>V</kbd>
         </button>
       </div>
-      <div class="interaction-hint">CLIC O TECLADO<span>V · DARSE LA VUELTA / D · PUERTA / F · LUZ / C · MONITOR / 1–4 ·
+      <div class="interaction-hint">CLIC O TECLADO<span>ESC / V · CAMINAR / X · PUERTA / F · LUZ / C · MONITOR / 1–4 ·
           CÁMARAS</span></div>
     </footer>
     <p class="prototype-note">VIGILANCIA NOCTURNA · NO PIERDAS DE VISTA EL ACCESO</p>

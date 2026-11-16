@@ -4,7 +4,7 @@ import { NIGHT_DURATION } from '../managers/NightSession.js';
 export class ResultScene extends Phaser.Scene {
   constructor() { super('Result'); }
 
-  create({ result, elapsed = 0, cause } = {}) {
+  create({ result, elapsed = 0, cause, served = 0, attackPlayed = false } = {}) {
     const attack = {
       rabbit: 'El Conejo de Arpillera cruzó el mostrador.',
       void: 'El Ente del Vacío apagó la ventanilla.',
@@ -16,7 +16,7 @@ export class ResultScene extends Phaser.Scene {
       doll: 'La Muñeca de Trapo cruzó el mostrador.',
     }[cause];
     const won = result === 'won';
-    const wendigoAttack = result === 'lost' && !cause;
+    const wendigoAttack = result === 'lost' && !cause && !attackPlayed;
     const root = document.querySelector('#surveillance');
     const panel = document.querySelector('#result-screen');
     root.className = 'result-mode' + (won ? ' victory-mode' : ' defeat-mode');
@@ -24,12 +24,10 @@ export class ResultScene extends Phaser.Scene {
     panel.hidden = wendigoAttack;
     document.querySelector('#camera-view').hidden = true;
     document.querySelector('#result-eyebrow').textContent = won ? 'TURNO COMPLETADO' : 'SEÑAL PERDIDA';
-    document.querySelector('#result-title').textContent = won ? '6:00 AM' : 'NO LLEGASTE AL AMANECER';
-    document.querySelector('#result-message').textContent = won ? 'La noche terminó. Sigues aquí.'
-      : attack ?? (cause === 'scare' ? 'La barra de susto se llenó.' : 'El wendigo entró por el acceso frontal.');
-    const minutes = Math.floor(elapsed / 60000);
-    const seconds = Math.floor(elapsed / 1000) % 60;
-    document.querySelector('#result-time').textContent = 'SOBREVIVISTE ' + minutes + ':' + String(seconds).padStart(2, '0') + ' / 6:00';
+    document.querySelector('#result-title').textContent = won ? '6 AM' : 'NO LLEGASTE AL AMANECER';
+    document.querySelector('#result-message').textContent = (won ? 'La noche terminó. Sigues aquí.' : attack ?? (cause === 'scare' || cause === 'customers' ? 'Demasiados clientes se fueron sin su pedido. El susto te venció.' : 'El wendigo entró por el acceso frontal.')) + ' Pedidos entregados: ' + served + '.';
+    const hour = Math.min(6,Math.floor(elapsed/60000)) || 12;
+    document.querySelector('#result-time').textContent = 'TURNO FINALIZADO A LAS ' + hour + ' AM';
     document.querySelector('#result-progress').style.width = Math.min(100, elapsed / NIGHT_DURATION * 100) + '%';
     this.backdrop = this.add.image(0, 0, won ? 'office' : attack ? `${cause}-phase-3` : 'office-wendigo-light').setOrigin(0.5);
     const fitScale = !won && ['smile', 'hermit', 'void'].includes(cause) ? Math.min : Math.max;
@@ -40,7 +38,7 @@ export class ResultScene extends Phaser.Scene {
     fit();
     this.scale.on('resize', fit);
     const audio = this.registry.get('audio');
-    if (!won && !attack) audio.defeat();
+    if (!won && !attackPlayed) audio.defeat();
     if (wendigoAttack) {
       const strike = this.add.image(0, 0, 'wendigo-jumpscare');
       const motion = { progress: 0 };

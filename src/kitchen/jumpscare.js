@@ -5,6 +5,7 @@ const ATTACKS = {
   'customer-06': { cause: 'mutant', entrance: [0.64, 0.1, -8, 240], sound: 'mutant-impact' },
   'customer-05': { cause: 'beast', entrance: [0.68, 0, 0, 180], sound: 'beast-impact' },
   'customer-01': { cause: 'rabbit', entrance: [0.77, 0, -6, 215], sound: 'rabbit-impact' },
+  'customer-03': { cause: 'customers', texture: 'customer-03', entrance: [0.78, 0, 0, 220], sound: 'wendigo-scream' },
   'customer-04': { cause: 'twins', entrance: [0.71, -0.07, 4, 255], sound: 'twins-impact' },
   'customer-02': { cause: 'doll', entrance: [0.84, 0.09, 10, 190], sound: 'doll-impact' },
 };
@@ -19,7 +20,7 @@ export function triggerJumpscare(scene, customer, fatal) {
   const root = document.querySelector('#surveillance');
   root.classList.add('rabbit-attack');
   const matte = scene.add.graphics().setDepth(99);
-  const frame = scene.add.image(0, 0, `${attack.cause}-phase-3`).setDepth(100);
+  const frame = scene.add.image(0, 0, attack.texture ?? `${attack.cause}-phase-3`).setDepth(100);
   const [startScale, drift, angle, duration] = attack.entrance;
   const motion = { progress: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 1 : 0 };
   const fit = () => {
@@ -56,7 +57,9 @@ export function triggerJumpscare(scene, customer, fatal) {
     close();
     if (!fatal) return;
     scene.registry.get('progress').record('lost', elapsed);
-    scene.scene.start('Result', { result: 'lost', elapsed, cause: attack.cause });
+    scene.session.result = 'lost';
+    scene.defeatCause = attack.cause;
+    scene.showResult(true);
   });
   return true;
 }

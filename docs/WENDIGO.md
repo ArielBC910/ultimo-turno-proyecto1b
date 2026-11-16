@@ -33,8 +33,12 @@ Reabrir antes de la retirada cancela la espera cerrada y conserva la exposición
 
 MonsterManager decide ubicación y produce eventos con su instante relativo. NightSession resuelve reloj y resultado. OfficeScene consume los eventos, cambia las imágenes y ordena el audio. ResultScene presenta victoria o derrota y limpia su interfaz al reintentar.
 
-La posición es única: solo la cámara de la sala ocupada usa su variante con wendigo. Frente al acceso se usan imágenes distintas con y sin linterna; una puerta cerrada lo oculta.
+La posición es única: solo la cámara de la sala ocupada usa su variante con wendigo. Cada cámara tiene dos posturas diferentes; getMonsterPose selecciona la primera antes de la mitad de la estancia y la segunda después. No consume números aleatorios, no reinicia temporizadores y no modifica las decisiones de IA. Frente al acceso se usan imágenes distintas con y sin linterna; una puerta cerrada lo oculta.
 
 ## Arte
 
-Se conserva el diseño parcialmente oculto y las poses distintas: trepado en una pared, tras el mostrador, colgado junto a una estantería, de perfil en el pasillo y asomado por el marco de la oficina. Los prompts están en WENDIGO_RECURSOS.json.
+La versión actual utiliza ocho imágenes con posturas variadas (de pie, arrastrándose, agachado y trepando por el techo) y dos imágenes del acceso. Se mejora la separación entre la silueta del monstruo y el fondo para distinguirlo con la estática y la oscuridad existentes.
+
+En la oficina está centrado, grande, sobre dos piernas y detrás del plano de la puerta. Las manos cuelgan junto al cuerpo y no tocan el marco. Cerrar la puerta lo oculta por completo de forma coherente.
+
+Las imágenes anteriores se conservan como archivo de versiones. Los prompts están en WENDIGO_DE_PIE_RECURSOS.json y WENDIGO_POSES_VARIADAS.json; este último sustituye la segunda pose de cada cámara. Los filtros CSS, la estática y la luz del juego se mantienen sin cambios.

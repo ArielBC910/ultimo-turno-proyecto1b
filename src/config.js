@@ -13,8 +13,14 @@ export const OFFICE_VIEWS = Object.freeze({
   closedLight: 'office-closed-light',
 });
 
-export function getSurveillanceTexture(state, location) {
-  if (state.monitorOpen) return state.camera + (location === state.camera ? '-wendigo' : '');
+export function getMonsterPose(monster) {
+  // Cambio de postura a mitad de la visita, sin consumir azar ni alterar la IA.
+  if (!Number.isFinite(monster.duration) || monster.duration <= 0) return 0;
+  return monster.elapsed >= monster.duration / 2 ? 1 : 0;
+}
+
+export function getSurveillanceTexture(state, location, pose = 0) {
+  if (state.monitorOpen) return state.camera + (location === state.camera ? (pose === 1 ? '-wendigo-alt' : '-wendigo') : '');
   if (state.doorClosed) return state.lightOn ? OFFICE_VIEWS.closedLight : OFFICE_VIEWS.closed;
   if (location === 'door') return state.lightOn ? 'office-wendigo-light' : 'office-wendigo-dark';
   return state.lightOn ? OFFICE_VIEWS.openLight : OFFICE_VIEWS.open;

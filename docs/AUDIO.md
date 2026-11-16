@@ -32,3 +32,8 @@ Los sonidos se disparan una sola vez por cambio efectivo mediante ratón, tácti
 ## Controles y ciclo de vida
 
 El audio comienza después de pulsar el botón de inicio, respetando el bloqueo de reproducción automática del navegador. El botón Audio permite silenciar todo y conserva la preferencia en localStorage. Volver al menú o terminar la partida detiene el ambiente y los efectos activos. La derrota reproduce un grito en la escena de resultados.
+
+
+## Jumpscare de derrota (2026-11-15)
+
+`foxy-jumpscare.wav`: audio extraído del archivo `foxy-jumpscare--fnaf-2.mp4` proporcionado por el usuario, a su petición. PCM estéreo, 48 kHz, duración 4,9458 s; velocidad original, sin cambiar el tono. Se reproduce una vez al comenzar el ataque fatal y continúa al pasar al resultado. Mute y reinicio lo detienen. Esta referencia de FNaF 2 no se atribuye a los recursos CC0 anteriores.
